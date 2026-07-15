@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, MapPin, Clock, Shield,Smartphone, Package } from "lucide-react";
+import { ArrowRight, Truck, MapPin, Clock, Shield,Smartphone, Package } from "lucide-react";
 import { useNavigate } from "react-router";
-import { Logo } from "../components/ui/Logo";
 
 const BASE = 500, RATE = 200;
 const calcFare = (km: number) => BASE + km * RATE;
@@ -16,7 +15,12 @@ export function LandingPage() {
     <div className="bg-bg min-h-screen">
       <nav className="fixed top-0 left-0 right-0 z-40 bg-bg/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Logo size="sm" />
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+              <Truck className="w-3.5 h-3.5 text-primary-fg" />
+            </div>
+            <span className="font-semibold text-sm text-fg tracking-tight">RAPID MILES</span>
+          </div>
           <div className="flex items-center gap-3">
             <button onClick={() => navigate("/customer/auth")}
               className="text-xs font-medium text-muted-fg hover:text-fg transition-colors px-3 py-1.5">
@@ -199,7 +203,8 @@ export function LandingPage() {
           <div className="flex flex-col md:flex-row items-start justify-between gap-10 mb-12">
             <div className="max-w-xs">
               <div className="flex items-center gap-2 mb-3">
-                <Logo size="sm" />
+                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center"><Truck className="w-3.5 h-3.5 text-primary-fg" /></div>
+                <span className="font-semibold text-sm text-fg tracking-tight">RAPID MILES</span>
               </div>
               <p className="text-xs text-muted-fg leading-relaxed">We deliver peace of mind, one mile at a time.</p>
             </div>

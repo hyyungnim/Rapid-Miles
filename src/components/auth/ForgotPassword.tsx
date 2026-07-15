@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { X, Mail, ArrowLeft } from "lucide-react";
+import { X, Mail, ArrowLeft, Truck } from "lucide-react";
 import { motion } from "motion/react";
-import { Logo } from "../ui/Logo";
 
 interface Props { onClose: () => void; onBackToLogin: () => void; }
 
@@ -24,7 +23,10 @@ export function ForgotPassword({ onClose, onBackToLogin }: Props) {
         <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-lg hover:bg-gray-50 transition-colors">
           <X className="w-4 h-4 text-gray-400" />
         </button>
-        <div className="mb-4"><Logo size="sm" /></div>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center"><Truck className="w-4 h-4 text-white" /></div>
+          <span className="font-bold text-gray-900 text-sm">Rapid Miles</span>
+        </div>
         {sent ? (
           <>
             <h2 className="text-2xl font-bold text-gray-900 mt-4 mb-1">Check your email</h2>
