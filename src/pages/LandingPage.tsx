@@ -39,7 +39,7 @@ export function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-light text-primary text-xs font-medium mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-              Ilorin — Kwara State
+              Swift · Safe · Reliable
             </div>
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-fg leading-[1.05] mb-5">
               Logistics that<br />
@@ -126,11 +126,9 @@ export function LandingPage() {
                     style={{ background: `linear-gradient(to right, var(--primary) ${km}%, var(--border) ${km}%)` }} />
                   <div className="flex justify-between text-xs text-muted-fg mt-1"><span>1 km</span><span>100 km</span></div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-2 sm:grid-cols-1 gap-4 mb-6 max-w-xs mx-auto">
                   {[
                     { label: "Per km", val: `₦${RATE.toLocaleString()}` },
-                    { label: "Distance", val: `₦${(km * RATE).toLocaleString()}` },
-                    { label: "Weight", val: "Up to 5 kg" },
                   ].map(r => (
                     <div key={r.label} className="text-center p-3 rounded-xl bg-muted">
                       <p className="text-xs text-muted-fg mb-1">{r.label}</p>
