@@ -28,7 +28,7 @@ export function LandingPage() {
               Sign in
             </button>
             <button onClick={() => navigate("/customer/auth")}
-              className="text-xs font-medium text-primary-fg bg-primary hover:bg-primary/90 transition-colors px-4 py-1.5 rounded-full">
+              className="              text-xs font-medium text-accent-fg bg-accent hover:bg-accent/90 transition-colors px-4 py-1.5 rounded-full">
               Get started
             </button>
           </div>
@@ -44,7 +44,7 @@ export function LandingPage() {
             </div>
             <h1 className="text-5xl sm:text-7xl font-bold tracking-tight text-fg leading-[1.05] mb-5">
               Logistics that<br />
-              <span className="text-primary">keeps you moving.</span>
+              <span className="text-accent">keeps you moving.</span>
             </h1>
             <p className="text-base text-muted-fg max-w-xl leading-relaxed mb-8">
               Book a delivery in seconds. Track every mile in real time.
@@ -71,7 +71,7 @@ export function LandingPage() {
               { icon: Shield, label: "Satisfaction", val: "98%" },
             ].map(s => (
               <div key={s.label} className="text-center">
-                <s.icon className="w-5 h-5 text-primary mx-auto mb-2" />
+                <s.icon className="w-5 h-5 text-accent mx-auto mb-2" />
                 <p className="text-lg font-bold text-fg">{s.val}</p>
                 <p className="text-xs text-muted-fg">{s.label}</p>
               </div>
@@ -83,7 +83,7 @@ export function LandingPage() {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <p className="text-xs font-semibold text-primary tracking-wider uppercase mb-3">Services</p>
+              <p className="text-xs font-semibold text-accent tracking-wider uppercase mb-3">Services</p>
             <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-fg">Everything we handle</h2>
           </motion.div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -94,11 +94,11 @@ export function LandingPage() {
               { icon: Smartphone, title: "Business", desc: "Bulk logistics with custom rates, dedicated support, and monthly billing.", metric: "50+ partners" },
             ].map((s, i) => (
               <motion.div key={s.title} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
-                className="group p-6 rounded-xl bg-card border border-border hover:border-primary/30 transition-all">
-                <div className="w-10 h-10 rounded-lg bg-primary-light flex items-center justify-center mb-4">
-                  <s.icon className="w-5 h-5 text-primary" />
+                className="group p-6 rounded-xl bg-card border border-border hover:border-accent/30 transition-all">
+                <div className="w-10 h-10 rounded-lg bg-accent-light flex items-center justify-center mb-4">
+                  <s.icon className="w-5 h-5 text-accent" />
                 </div>
-                <span className="text-xs font-semibold text-primary tracking-wider mb-2 block">{s.metric}</span>
+                <span className="text-xs font-semibold text-accent tracking-wider mb-2 block">{s.metric}</span>
                 <h3 className="text-lg font-bold text-fg mb-2">{s.title}</h3>
                 <p className="text-sm text-muted-fg leading-relaxed">{s.desc}</p>
               </motion.div>
@@ -111,7 +111,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-5 gap-12 items-start">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="lg:col-span-2">
-              <p className="text-xs font-semibold text-primary tracking-wider uppercase mb-3">Pricing</p>
+              <p className="text-xs font-semibold text-accent tracking-wider uppercase mb-3">Pricing</p>
               <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-fg mb-4">Know the cost, before you ship.</h2>
               <p className="text-sm text-muted-fg leading-relaxed">Transparent per-kilometre pricing. No hidden fees, no surprise charges.</p>
             </motion.div>
@@ -123,27 +123,27 @@ export function LandingPage() {
                     <span className="text-xl font-bold text-fg">{km} <span className="text-sm font-normal text-muted-fg">km</span></span>
                   </div>
                   <input type="range" min={1} max={100} value={km} onChange={e => setKm(+e.target.value)}
-                    className="w-full h-2 rounded-full appearance-none cursor-pointer accent-primary"
-                    style={{ background: `linear-gradient(to right, var(--primary) ${km}%, var(--border) ${km}%)` }} />
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer accent-accent"
+                    style={{ background: `linear-gradient(to right, var(--accent) ${km}%, var(--border) ${km}%)` }} />
                   <div className="flex justify-between text-xs text-muted-fg mt-1"><span>1 km</span><span>100 km</span></div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-1 gap-4 mb-6 max-w-xs mx-auto">
                   {[
                     { label: "Per km", val: `₦${RATE.toLocaleString()}` },
                   ].map(r => (
-                    <div key={r.label} className="text-center p-3 rounded-xl bg-muted">
+                    <div key={r.label} className="text-center p-3 rounded-xl bg-accent-light">
                       <p className="text-xs text-muted-fg mb-1">{r.label}</p>
-                      <p className="text-sm font-bold text-fg">{r.val}</p>
+                      <p className="text-sm font-bold text-accent">{r.val}</p>
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center justify-between p-4 rounded-xl bg-primary-light">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-accent-light">
                   <div>
                     <p className="text-xs text-muted-fg mb-0.5">Estimated total</p>
-                    <p className="text-2xl font-bold text-primary">₦{fare.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-accent">₦{fare.toLocaleString()}</p>
                   </div>
                   <button onClick={() => navigate("/customer/auth")}
-                    className="px-5 py-2.5 rounded-full bg-primary text-primary-fg font-medium text-sm hover:bg-primary/90 transition-all flex items-center gap-2">
+                    className="px-5 py-2.5 rounded-full bg-accent text-accent-fg font-medium text-sm hover:bg-accent/90 transition-all flex items-center gap-2">
                     Book now <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -157,7 +157,7 @@ export function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <p className="text-xs font-semibold text-primary tracking-wider uppercase mb-3">Process</p>
+              <p className="text-xs font-semibold text-accent tracking-wider uppercase mb-3">Process</p>
               <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-fg mb-4">Four steps, one delivery.</h2>
               <p className="text-sm text-muted-fg leading-relaxed">From booking to drop-off in the simplest workflow possible.</p>
             </motion.div>
@@ -170,7 +170,7 @@ export function LandingPage() {
               ].map((s, i) => (
                 <motion.div key={s.n} initial={{ opacity: 0, x: -16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                   className="flex items-start gap-5 group">
-                  <span className="text-3xl font-bold text-border group-hover:text-primary/30 transition-colors leading-none shrink-0 w-10">{s.n}</span>
+                  <span className="text-3xl font-bold text-border group-hover:text-accent/40 transition-colors leading-none shrink-0 w-10">{s.n}</span>
                   <div className="pt-1">
                     <h3 className="text-lg font-bold text-fg mb-1">{s.title}</h3>
                     <p className="text-sm text-muted-fg leading-relaxed">{s.desc}</p>
@@ -237,7 +237,7 @@ export function LandingPage() {
           </div>
           <div className="pt-6 border-t border-border flex flex-col sm:flex-row items-start justify-between gap-2">
             <p className="text-[11px] text-muted-fg/60">&copy; 2024 Rapid Miles Logistics.</p>
-            <p className="text-[11px] text-primary font-medium">Swift &middot; Safe &middot; Reliable</p>
+            <p className="text-[11px] text-accent font-medium">Swift &middot; Safe &middot; Reliable</p>
           </div>
         </div>
       </footer>
