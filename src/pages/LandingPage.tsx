@@ -22,17 +22,13 @@ export function LandingPage() {
             <span className="font-semibold text-sm text-fg tracking-tight">RAPID MILES</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/rapidman")}
+            <button onClick={() => navigate("/customer/auth")}
               className="text-xs font-medium text-muted-fg hover:text-fg transition-colors px-3 py-1.5">
-              Rapidman
-            </button>
-            <button onClick={() => navigate("/admin")}
-              className="text-xs font-medium text-muted-fg hover:text-fg transition-colors px-3 py-1.5">
-              Admin
+              Sign in
             </button>
             <button onClick={() => navigate("/customer/auth")}
               className="text-xs font-medium text-primary-fg bg-primary hover:bg-primary/90 transition-colors px-4 py-1.5 rounded-full">
-              Sign in
+              Get started
             </button>
           </div>
         </div>
