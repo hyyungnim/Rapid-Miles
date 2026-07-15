@@ -155,12 +155,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (error) throw new Error(error.message);
         if (data.session?.user) {
-          const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.session.user.id).maybeSingle();
+          const userId = data.session.user.id;
+          let { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
           if (profile) {
+            if (profile.role !== role) {
+              await supabase.from("profiles").update({ role }).eq("id", userId);
+              profile = { ...profile, role };
+            }
+            if (role === "driver") {
+              const { data: existingDriver } = await supabase.from("drivers").select("id").eq("id", userId).maybeSingle();
+              if (!existingDriver) {
+                await supabase.from("drivers").insert({
+                  id: userId,
+                  full_name: fullName,
+                  phone,
+                  email,
+                  motorcycle_photo: null,
+                  rating: 0,
+                  total_deliveries: 0,
+                  is_online: false,
+                });
+              }
+            }
             setState({ user: profile, loading: false, error: null });
           } else {
             const newProfile: Profile = {
-              id: data.session.user.id,
+              id: userId,
               email,
               full_name: fullName,
               phone,
@@ -171,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             await supabase.from("profiles").insert(newProfile);
             if (role === "driver") {
               await supabase.from("drivers").insert({
-                id: data.session.user.id,
+                id: userId,
                 full_name: fullName,
                 phone,
                 email,
@@ -179,7 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 rating: 0,
                 total_deliveries: 0,
                 is_online: false,
-              }).maybeSingle();
+              });
             }
             setState({ user: newProfile, loading: false, error: null });
           }
