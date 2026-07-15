@@ -14,7 +14,7 @@ export function ProtectedRoute({ children, role }: Props) {
     if (!user) navigate("/", { replace: true });
     else if (user.role !== role) {
       if (user.role === "admin") navigate("/admin", { replace: true });
-      else if (user.role === "driver") navigate("/driver/dashboard", { replace: true });
+      else if (user.role === "driver") navigate("/rapidman/dashboard", { replace: true });
       else navigate("/customer", { replace: true });
     }
   }, [user, loading, role, navigate]);

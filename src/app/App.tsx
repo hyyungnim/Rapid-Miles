@@ -21,9 +21,9 @@ export default function App() {
           <Route path="/customer/auth" element={<CustomerAuth />} />
           <Route path="/customer" element={<ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>} />
           <Route path="/customer/profile" element={<ProtectedRoute role="customer"><ProfilePage role="customer" /></ProtectedRoute>} />
-          <Route path="/driver" element={<DriverAuth />} />
-          <Route path="/driver/dashboard" element={<ProtectedRoute role="driver"><DriverDashboard /></ProtectedRoute>} />
-          <Route path="/driver/profile" element={<ProtectedRoute role="driver"><ProfilePage role="driver" /></ProtectedRoute>} />
+          <Route path="/rapidman" element={<DriverAuth />} />
+          <Route path="/rapidman/dashboard" element={<ProtectedRoute role="driver"><DriverDashboard /></ProtectedRoute>} />
+          <Route path="/rapidman/profile" element={<ProtectedRoute role="driver"><ProfilePage role="driver" /></ProtectedRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

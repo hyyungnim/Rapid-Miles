@@ -41,7 +41,7 @@ export function ProfilePage({ role }: Props) {
     <div className="min-h-screen bg-bg">
       <header className="sticky top-0 z-30 bg-card border-b border-border">
         <div className="max-w-lg mx-auto px-6 h-14 flex items-center gap-4">
-          <button onClick={() => navigate(role === "driver" ? "/driver/dashboard" : "/customer")} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+          <button onClick={() => navigate(role === "driver" ? "/rapidman/dashboard" : "/customer")} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="font-bold text-fg text-lg">Profile</h1>

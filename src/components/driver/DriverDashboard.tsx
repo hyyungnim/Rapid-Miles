@@ -94,7 +94,7 @@ export function DriverDashboard() {
               <span className="w-1.5 h-1.5 rounded-full bg-success" />
               <span className="text-xs text-muted-fg hidden sm:inline">Online</span>
             </div>
-            <button onClick={() => navigate("/driver/profile")}
+            <button onClick={() => navigate("/rapidman/profile")}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-muted transition-colors">
               <span className="text-sm text-muted-fg hidden sm:block">{user?.full_name || "Rapidman"}</span>
               <div className="w-8 h-8 rounded-full bg-[#0f172a] flex items-center justify-center text-xs font-bold text-white">

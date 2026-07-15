@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase, requireSupabase } from "../lib/supabase";
 import type { Profile, UserRole } from "../lib/types";
 
@@ -45,6 +45,7 @@ function clearLocalSession() {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, loading: true, error: null });
+  const pendingProfileRef = useRef<Profile | null>(null);
 
   useEffect(() => {
     if (supabase) {
@@ -61,6 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
+          const pending = pendingProfileRef.current;
+          if (pending && pending.id === session.user.id) {
+            setState({ user: pending, loading: false, error: null });
+            pendingProfileRef.current = null;
+            return;
+          }
           const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
           setState({ user: data || null, loading: false, error: null });
         } else {
@@ -156,40 +163,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw new Error(error.message);
         if (data.session?.user) {
           const userId = data.session.user.id;
-          let { data: profile } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
-          if (profile) {
-            if (profile.role !== role) {
-              await supabase.from("profiles").update({ role }).eq("id", userId);
-              profile = { ...profile, role };
-            }
-            if (role === "driver") {
-              const { data: existingDriver } = await supabase.from("drivers").select("id").eq("id", userId).maybeSingle();
-              if (!existingDriver) {
-                await supabase.from("drivers").insert({
-                  id: userId,
-                  full_name: fullName,
-                  phone,
-                  email,
-                  motorcycle_photo: null,
-                  rating: 0,
-                  total_deliveries: 0,
-                  is_online: false,
-                });
-              }
-            }
-            setState({ user: profile, loading: false, error: null });
-          } else {
-            const newProfile: Profile = {
-              id: userId,
-              email,
-              full_name: fullName,
-              phone,
-              role,
-              avatar_url: null,
-              created_at: new Date().toISOString(),
-            };
-            await supabase.from("profiles").insert(newProfile);
-            if (role === "driver") {
+          await sb.auth.setSession(data.session);
+          const correctProfile: Profile = {
+            id: userId,
+            email,
+            full_name: fullName,
+            phone,
+            role,
+            avatar_url: null,
+            created_at: new Date().toISOString(),
+          };
+          await supabase.from("profiles").upsert(correctProfile, { onConflict: "id" });
+          if (role === "driver") {
+            const { data: existingDriver } = await supabase.from("drivers").select("id").eq("id", userId).maybeSingle();
+            if (!existingDriver) {
               await supabase.from("drivers").insert({
                 id: userId,
                 full_name: fullName,
@@ -201,8 +188,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 is_online: false,
               });
             }
-            setState({ user: newProfile, loading: false, error: null });
           }
+          pendingProfileRef.current = correctProfile;
+          setState({ user: correctProfile, loading: false, error: null });
         } else {
           setState({ user: null, loading: false, error: "Check your email for the confirmation link." });
         }

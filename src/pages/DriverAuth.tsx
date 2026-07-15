@@ -15,7 +15,7 @@ export function DriverAuth() {
 
   useEffect(() => {
     if (authDone && user) {
-      if (user.role === "driver") navigate("/driver/dashboard");
+      if (user.role === "driver") navigate("/rapidman/dashboard");
       else {
         signOut();
         setErr("This account is not a rapidman account. Use a rapidman account.");
