@@ -84,6 +84,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signIn(email: string, password: string) {
     setState((s) => ({ ...s, loading: true, error: null }));
 
+    // Check hardcoded admin credentials first
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      const adminProfile: Profile = {
+        id: "admin-001",
+        email: ADMIN_EMAIL,
+        full_name: "Admin",
+        phone: "+234 906 653 6931",
+        role: "admin",
+        avatar_url: null,
+        created_at: new Date().toISOString(),
+      };
+      setLocalSession(adminProfile.email, adminProfile.id);
+      setState({ user: adminProfile, loading: false, error: null });
+      return;
+    }
+
     if (supabase) {
       try {
         const sb = requireSupabase();
@@ -103,21 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Local auth
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      const adminProfile: Profile = {
-        id: "admin-001",
-        email: ADMIN_EMAIL,
-        full_name: "Admin",
-        phone: "+234 906 653 6931",
-        role: "admin",
-        avatar_url: null,
-        created_at: new Date().toISOString(),
-      };
-      setLocalSession(adminProfile.email, adminProfile.id);
-      setState({ user: adminProfile, loading: false, error: null });
-      return;
-    }
-
     const users = getLocalUsers();
     const user = users.find(u => u.email === email);
     if (!user) {
