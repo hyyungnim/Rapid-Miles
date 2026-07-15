@@ -107,9 +107,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw new Error(error.message);
         const { data: { session } } = await sb.auth.getSession();
         if (session?.user) {
-          const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
-          if (data) setState({ user: data, loading: false, error: null });
-          else setState((s) => ({ ...s, loading: false }));
+          const { data: profile } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
+          if (profile) {
+            setState({ user: profile, loading: false, error: null });
+          } else {
+            const newProfile: Profile = {
+              id: session.user.id,
+              email,
+              full_name: session.user.user_metadata?.full_name || email.split("@")[0],
+              phone: session.user.user_metadata?.phone || null,
+              role: session.user.user_metadata?.role || "customer",
+              avatar_url: null,
+              created_at: new Date().toISOString(),
+            };
+            await supabase.from("profiles").insert(newProfile);
+            setState({ user: newProfile, loading: false, error: null });
+          }
         }
       } catch (e: any) {
         setState((s) => ({ ...s, loading: false, error: e.message }));
@@ -143,8 +156,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw new Error(error.message);
         if (data.session?.user) {
           const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.session.user.id).maybeSingle();
-          if (profile) setState({ user: profile, loading: false, error: null });
-          else setState((s) => ({ ...s, loading: false }));
+          if (profile) {
+            setState({ user: profile, loading: false, error: null });
+          } else {
+            const newProfile: Profile = {
+              id: data.session.user.id,
+              email,
+              full_name: fullName,
+              phone,
+              role,
+              avatar_url: null,
+              created_at: new Date().toISOString(),
+            };
+            await supabase.from("profiles").insert(newProfile);
+            setState({ user: newProfile, loading: false, error: null });
+          }
         } else {
           setState({ user: null, loading: false, error: "Check your email for the confirmation link." });
         }

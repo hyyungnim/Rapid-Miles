@@ -22,6 +22,10 @@ export function LandingPage() {
             <span className="font-semibold text-[15px] text-white/90 tracking-tight">RAPID MILES</span>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => navigate("/driver")}
+              className="text-sm font-medium text-white/70 hover:text-white transition-colors px-4 py-2 rounded-full hover:bg-white/5">
+              Driver
+            </button>
             <button onClick={() => navigate("/customer/auth")}
               className="text-sm font-medium text-white/70 hover:text-white transition-colors px-4 py-2 rounded-full hover:bg-white/5">
               Sign in
