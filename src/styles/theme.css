@@ -25,6 +25,29 @@
   --font: 'Instrument Sans', 'Inter', -apple-system, sans-serif;
 }
 
+.dark {
+  --bg: #0f172a;
+  --fg: #f1f5f9;
+  --card: #1e293b;
+  --card-fg: #f1f5f9;
+  --primary: #3b82f6;
+  --primary-fg: #ffffff;
+  --primary-light: #1e3a5f;
+  --accent: #f5c400;
+  --accent-fg: #0f172a;
+  --accent-light: #3d3520;
+  --muted: #1e293b;
+  --muted-fg: #94a3b8;
+  --border: #334155;
+  --ring: #3b82f6;
+  --success: #10b981;
+  --success-light: #064e3b;
+  --warning: #f59e0b;
+  --warning-light: #422006;
+  --error: #ef4444;
+  --error-light: #450a0a;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-fg: var(--fg);
