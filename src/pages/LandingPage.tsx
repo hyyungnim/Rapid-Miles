@@ -47,7 +47,7 @@ export function LandingPage() {
             </h1>
             <p className="text-base text-muted-fg max-w-xl leading-relaxed mb-8">
               Book a delivery in seconds. Track every mile in real time.
-              Same-day pickup and drop-off across Ilorin — priced by the kilometre, no surprises.
+              Same-day pickup and drop-off across Ilorin, priced by the kilometre, no surprises.
             </p>
             <div className="flex items-center gap-3">
               <button onClick={() => navigate("/customer/auth")}
