@@ -3,10 +3,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import {
   Navigation, Clock, Package, ChevronDown, Phone,
-  CheckCircle, XCircle, Truck, LogOut
+  CheckCircle, XCircle, LogOut
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useDriverDeliveries } from "../../hooks/useDriverDeliveries";
+import { Logo } from "../ui/Logo";
 
 type Tab = "active" | "history";
 
@@ -48,10 +49,7 @@ export function DriverDashboard() {
       <header className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-border">
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#0f172a] flex items-center justify-center"><Truck className="w-3.5 h-3.5 text-white" /></div>
-              <span className="font-semibold text-[15px] tracking-tight text-fg">RAPID MILES</span>
-            </div>
+<Logo size="sm" />
             <nav className="hidden sm:flex items-center gap-1 bg-muted rounded-full p-1">
               {TABS.map(t => (
                 <button key={t.key} onClick={() => setTab(t.key)}

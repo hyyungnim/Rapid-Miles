@@ -3,10 +3,11 @@ import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   BarChart3, Users, UserCheck, Package, DollarSign, TrendingUp,
-  Truck, Activity, ArrowUpRight, Clock, MapPin, LogOut
+  Activity, ArrowUpRight, Clock, MapPin, LogOut
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAdminData } from "../../hooks/useAdminData";
+import { Logo } from "../ui/Logo";
 
 type Tab = "overview" | "analytics" | "revenue";
 
@@ -62,10 +63,7 @@ export function AdminDashboard() {
       <header className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-border">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#0f172a] flex items-center justify-center"><Truck className="w-3.5 h-3.5 text-white" /></div>
-              <span className="font-semibold text-[15px] tracking-tight text-fg">RAPID MILES</span>
-            </div>
+<Logo size="sm" />
             <nav className="hidden sm:flex items-center gap-1 bg-muted rounded-full p-1">
               {TABS.map(t => (
                 <button key={t.key} onClick={() => setTab(t.key)}

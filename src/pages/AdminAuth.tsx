@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
-import { ArrowRight, Truck, Eye, EyeOff } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { Logo } from "../components/ui/Logo";
 
 export function AdminAuth() {
   const [email, setEmail] = useState("");
@@ -35,10 +36,7 @@ export function AdminAuth() {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-4">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
-        <div className="flex items-center gap-2 justify-center mb-8">
-          <div className="w-8 h-8 rounded-lg bg-[#0f172a] flex items-center justify-center"><Truck className="w-4 h-4 text-white" /></div>
-          <span className="font-bold text-lg text-fg">RAPID MILES</span>
-        </div>
+          <div className="flex justify-center mb-8"><Logo size="md" /></div>
 
         <h1 className="text-2xl font-bold text-fg mb-1">Admin sign in</h1>
         <p className="text-sm text-muted-fg mb-6">Sign in to access the admin dashboard.</p>
