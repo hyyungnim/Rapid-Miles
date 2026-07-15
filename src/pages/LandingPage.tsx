@@ -212,7 +212,7 @@ export function LandingPage() {
               </div>
               <div>
                 <p className="text-[11px] font-semibold text-muted-fg tracking-wider uppercase mb-4">Contact</p>
-                <p className="text-xs text-fg/70 mb-1">+234 906 653 6931</p>
+                <p className="text-xs text-fg/70 mb-1">+234 816 935 9828</p>
                 <p className="text-xs text-fg/70 mb-1">rapidmileslogistics@gmail.com</p>
                 <p className="text-xs text-fg/50 leading-relaxed">27 Bolorunduro Community,<br />Tanke Akata, Ilorin</p>
               </div>
