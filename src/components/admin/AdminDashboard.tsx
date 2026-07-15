@@ -6,6 +6,7 @@ import {
   Truck, Activity, ArrowUpRight, Clock, MapPin, LogOut
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAdminData } from "../../hooks/useAdminData";
 
 type Tab = "overview" | "analytics" | "revenue";
 
@@ -15,42 +16,45 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "revenue", label: "Revenue", icon: DollarSign },
 ];
 
-const STATS = [
-  { label: "Deliveries", val: "1,247", change: "+12%", icon: Package },
-  { label: "Customers", val: "342", change: "+8%", icon: Users },
-  { label: "Drivers", val: "18", change: "+2", icon: UserCheck },
-  { label: "Revenue", val: "₦486K", change: "+15%", icon: DollarSign },
-];
-
-const RECENT = [
-  { id: "RML-2401", customer: "Abdulsalam K.", driver: "Muhammed S.", status: "in_transit", amount: "₦3,200" },
-  { id: "RML-2400", customer: "Fatimah O.", driver: "Ibrahim K.", status: "delivered", amount: "₦2,800" },
-  { id: "RML-2399", customer: "Kunle A.", driver: "Bola A.", status: "delivered", amount: "₦3,500" },
-];
-
-const TOP_DRIVERS = [
-  { name: "Muhammed S.", deliveries: 45, rating: "4.8", online: true },
-  { name: "Ibrahim K.", deliveries: 32, rating: "4.6", online: true },
-  { name: "Bola A.", deliveries: 28, rating: "4.7", online: false },
-];
-
-const ANALYTICS = [
-  { label: "Avg. Delivery Time", val: "24 min", change: "-5%", icon: Clock },
-  { label: "On-Time Rate", val: "97%", change: "+2%", icon: Activity },
-  { label: "Avg. Distance", val: "12.4 km", change: "+0.5%", icon: MapPin },
-  { label: "Repeat Rate", val: "68%", change: "+4%", icon: Users },
-  { label: "Avg. Rating", val: "4.8 ★", change: "+0.1", icon: BarChart3 },
-  { label: "Cancellation", val: "2.3%", change: "-0.7%", icon: Clock },
-];
+function formatCurrency(n: number) {
+  if (n >= 1000000) return "₦" + (n / 1000000).toFixed(1) + "M";
+  if (n >= 1000) return "₦" + (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "K";
+  return "₦" + n.toLocaleString();
+}
 
 export function AdminDashboard() {
   const [tab, setTab] = useState<Tab>("overview");
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
+  const { stats, recentDeliveries, topDrivers, revenue, analytics, loading } = useAdminData();
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="w-5 h-5 rounded-full border border-muted-fg border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  const STATS = stats ? [
+    { label: "Deliveries", val: stats.deliveries.toLocaleString(), change: stats.deliveriesChange, icon: Package },
+    { label: "Customers", val: stats.customers.toLocaleString(), change: stats.customersChange, icon: Users },
+    { label: "Drivers", val: stats.drivers.toLocaleString(), change: stats.driversChange, icon: UserCheck },
+    { label: "Revenue", val: formatCurrency(stats.revenue), change: stats.revenueChange, icon: DollarSign },
+  ] : [];
+
+  const STATUS_STYLE: Record<string, string> = {
+    delivered: "bg-success-light text-success",
+    in_transit: "bg-primary-light text-primary",
+    accepted: "bg-muted text-fg",
+    pending: "bg-accent-light text-accent-fg",
+    picked_up: "bg-primary-light text-primary",
+    cancelled: "bg-error-light text-error",
   };
 
   return (
@@ -107,15 +111,19 @@ export function AdminDashboard() {
                     <ArrowUpRight className="w-4 h-4 text-muted-fg" />
                   </div>
                   <div className="space-y-2">
-                    {RECENT.map(d => (
+                    {recentDeliveries.length === 0 && (
+                      <p className="text-sm text-muted-fg text-center py-8">No deliveries yet</p>
+                    )}
+                    {recentDeliveries.map(d => (
                       <div key={d.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                         <div>
                           <p className="text-sm font-medium text-fg">{d.id}</p>
-                          <p className="text-xs text-muted-fg">{d.customer} → {d.driver}</p>
+                          <p className="text-xs text-muted-fg">{d.customer_name} → {d.driver_name}</p>
                         </div>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          d.status === "delivered" ? "bg-success-light text-success" : "bg-primary-light text-primary"
-                        }`}>{d.status}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-fg">{formatCurrency(d.amount)}</span>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLE[d.status] || STATUS_STYLE.pending}`}>{d.status.replace("_", " ")}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -127,8 +135,11 @@ export function AdminDashboard() {
                     <ArrowUpRight className="w-4 h-4 text-muted-fg" />
                   </div>
                   <div className="space-y-2">
-                    {TOP_DRIVERS.map(d => (
-                      <div key={d.name} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    {topDrivers.length === 0 && (
+                      <p className="text-sm text-muted-fg text-center py-8">No drivers yet</p>
+                    )}
+                    {topDrivers.map(d => (
+                      <div key={d.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-[#0f172a] flex items-center justify-center text-xs font-bold text-white">{d.name[0]}</div>
                           <div>
@@ -148,51 +159,60 @@ export function AdminDashboard() {
           {tab === "analytics" && (
             <motion.div key="analytics" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {ANALYTICS.map(s => (
+                {analytics && [
+                  { label: "Avg. Delivery Time", val: analytics.avgDeliveryTime, change: "—", icon: Clock },
+                  { label: "On-Time Rate", val: analytics.onTimeRate, change: "—", icon: Activity },
+                  { label: "Avg. Distance", val: analytics.avgDistance, change: "—", icon: MapPin },
+                  { label: "Repeat Rate", val: analytics.repeatRate, change: "—", icon: Users },
+                  { label: "Avg. Rating", val: analytics.avgRating, change: "—", icon: BarChart3 },
+                  { label: "Cancellation", val: analytics.cancellation, change: "—", icon: Clock },
+                ].filter(s => s.val !== "—").map(s => (
                   <div key={s.label} className="rounded-xl bg-muted p-5">
                     <div className="flex items-center justify-between mb-3">
                       <s.icon className="w-4 h-4 text-muted-fg" />
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                        s.change.startsWith("+") ? "bg-success-light text-success" :
-                        s.change.startsWith("-") ? "bg-error-light text-error" : "bg-muted text-muted-fg"
-                      }`}>{s.change}</span>
                     </div>
                     <p className="text-2xl font-bold text-fg">{s.val}</p>
                     <p className="text-xs text-muted-fg mt-1">{s.label}</p>
                   </div>
                 ))}
+                {!analytics && <p className="text-sm text-muted-fg col-span-full text-center py-12">No data yet</p>}
               </div>
             </motion.div>
           )}
 
           {tab === "revenue" && (
             <motion.div key="revenue" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg space-y-6">
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: "Today", val: "₦18,400" },
-                  { label: "Week", val: "₦112K" },
-                  { label: "Month", val: "₦486K" },
-                  { label: "All time", val: "₦2.4M" },
-                ].map(s => (
-                  <div key={s.label} className="rounded-xl bg-muted p-4">
-                    <p className="text-xs text-muted-fg mb-1">{s.label}</p>
-                    <p className="text-xl font-bold text-fg">{s.val}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-xl bg-muted p-6">
-                <p className="text-sm font-semibold text-fg mb-4">Monthly revenue</p>
-                <div className="h-44 flex items-end justify-between gap-2">
-                  {[60, 45, 80, 55, 90, 70, 85, 65, 95, 75, 80, 100].map((h, i) => (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                      <div className="w-full bg-primary/10 rounded-t relative" style={{ height: `${h}%` }}>
-                        <div className="absolute bottom-0 left-0 right-0 bg-primary rounded-t transition-all" style={{ height: `${h}%` }} />
+              {revenue && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Today", val: formatCurrency(revenue.today) },
+                      { label: "Week", val: formatCurrency(revenue.week) },
+                      { label: "Month", val: formatCurrency(revenue.month) },
+                      { label: "All time", val: formatCurrency(revenue.allTime) },
+                    ].map(s => (
+                      <div key={s.label} className="rounded-xl bg-muted p-4">
+                        <p className="text-xs text-muted-fg mb-1">{s.label}</p>
+                        <p className="text-xl font-bold text-fg">{s.val}</p>
                       </div>
-                      <span className="text-[10px] text-muted-fg">{["J","F","M","A","M","J","J","A","S","O","N","D"][i]}</span>
+                    ))}
+                  </div>
+                  <div className="rounded-xl bg-muted p-6">
+                    <p className="text-sm font-semibold text-fg mb-4">Monthly revenue</p>
+                    <div className="h-44 flex items-end justify-between gap-2">
+                      {revenue.monthly.map((h, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                          <div className="w-full bg-primary/10 rounded-t relative" style={{ height: `${Math.max(h > 0 ? (h / Math.max(...revenue.monthly)) * 100 : 0, 2)}%` }}>
+                            <div className="absolute bottom-0 left-0 right-0 bg-primary rounded-t transition-all" style={{ height: `${Math.max(h > 0 ? (h / Math.max(...revenue.monthly)) * 100 : 0, 2)}%` }} />
+                          </div>
+                          <span className="text-[10px] text-muted-fg">{["J","F","M","A","M","J","J","A","S","O","N","D"][i]}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                </>
+              )}
+              {!revenue && <p className="text-sm text-muted-fg text-center py-12">No revenue data yet</p>}
             </motion.div>
           )}
         </AnimatePresence>
