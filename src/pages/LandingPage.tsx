@@ -3,8 +3,8 @@ import { motion } from "motion/react";
 import { ArrowRight, Truck, MapPin, Clock, Shield,Smartphone, Package } from "lucide-react";
 import { useNavigate } from "react-router";
 
-const BASE = 500, RATE = 200;
-const calcFare = (km: number) => BASE + km * RATE;
+const RATE = 200;
+const calcFare = (km: number) => km * RATE;
 
 export function LandingPage() {
   const [km, setKm] = useState(10);
@@ -128,7 +128,6 @@ export function LandingPage() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                   {[
-                    { label: "Base fare", val: `₦${BASE.toLocaleString()}` },
                     { label: "Per km", val: `₦${RATE.toLocaleString()}` },
                     { label: "Distance", val: `₦${(km * RATE).toLocaleString()}` },
                     { label: "Weight", val: "Up to 5 kg" },
