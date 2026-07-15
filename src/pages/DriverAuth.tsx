@@ -9,13 +9,20 @@ export function DriverAuth() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, signOut, user } = useAuth();
   const navigate = useNavigate();
   const [authDone, setAuthDone] = useState(false);
 
   useEffect(() => {
-    if (authDone && user) navigate("/driver/dashboard");
-  }, [authDone, user, navigate]);
+    if (authDone && user) {
+      if (user.role === "driver") navigate("/driver/dashboard");
+      else {
+        signOut();
+        setErr("This account is not a rapidman account. Use a rapidman account.");
+        setAuthDone(false);
+      }
+    }
+  }, [authDone, user, navigate, signOut]);
 
   const [form, setForm] = useState({ email: "", password: "", name: "", phone: "" });
 
@@ -54,9 +61,9 @@ export function DriverAuth() {
           ))}
         </div>
 
-        <h1 className="text-2xl font-bold text-fg mb-1">{mode === "signin" ? "Welcome back" : "Join as driver"}</h1>
+        <h1 className="text-2xl font-bold text-fg mb-1">{mode === "signin" ? "Welcome back" : "Join as rapidman"}</h1>
         <p className="text-sm text-muted-fg mb-6">
-          {mode === "signin" ? "Sign in to your driver account." : "Register as a delivery driver."}
+          {mode === "signin" ? "Sign in to your rapidman account." : "Register as a rapidman."}
         </p>
         {err && <p className="text-xs text-error mb-4 bg-error-light px-3 py-2 rounded-lg">{err}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">

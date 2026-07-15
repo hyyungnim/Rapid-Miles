@@ -89,8 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const adminProfile: Profile = {
         id: "admin-001",
         email: ADMIN_EMAIL,
-        full_name: "Admin",
-        phone: "+234 906 653 6931",
+        full_name: "Rapid Miles Logistics",
+        phone: "+234 816 935 9828",
         role: "admin",
         avatar_url: null,
         created_at: new Date().toISOString(),
@@ -169,6 +169,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               created_at: new Date().toISOString(),
             };
             await supabase.from("profiles").insert(newProfile);
+            if (role === "driver") {
+              await supabase.from("drivers").insert({
+                id: data.session.user.id,
+                full_name: fullName,
+                phone,
+                email,
+                motorcycle_photo: null,
+                rating: 0,
+                total_deliveries: 0,
+                is_online: false,
+              }).maybeSingle();
+            }
             setState({ user: newProfile, loading: false, error: null });
           }
         } else {
