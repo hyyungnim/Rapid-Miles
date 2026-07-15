@@ -7,7 +7,7 @@ const RATE = 200;
 const calcFare = (km: number) => km * RATE;
 
 export function LandingPage() {
-  const [km, setKm] = useState(10);
+  const [km, setKm] = useState(1);
   const navigate = useNavigate();
   const fare = calcFare(km);
 

@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router";
 import { AuthProvider } from "../contexts/AuthContext";
+import { ScrollToTop } from "../components/ScrollToTop";
 import { LandingPage } from "../pages/LandingPage";
 import { AdminAuth } from "../pages/AdminAuth";
 import { CustomerAuth } from "../pages/CustomerAuth";
@@ -13,6 +14,7 @@ import { ProtectedRoute } from "../components/auth/ProtectedRoute";
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
