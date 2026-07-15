@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight, Truck, MapPin, Clock, Shield,Smartphone, Package } from "lucide-react";
+import { ArrowRight, Truck, MapPin, Clock, Shield, Smartphone, Package, Linkedin } from "lucide-react";
 import { useNavigate } from "react-router";
+import { SOCIAL_LINKS } from "../lib/social";
 
 const RATE = 200;
 const calcFare = (km: number) => km * RATE;
@@ -205,7 +206,7 @@ export function LandingPage() {
               </div>
               <p className="text-xs text-muted-fg leading-relaxed">We deliver peace of mind, one mile at a time.</p>
             </div>
-            <div className="grid grid-cols-2 gap-12">
+            <div className="grid grid-cols-3 gap-12">
               <div>
                 <p className="text-[11px] font-semibold text-muted-fg tracking-wider uppercase mb-4">Services</p>
                 {["Pickup", "Express", "Last Mile", "Business"].map(s => (
@@ -217,6 +218,20 @@ export function LandingPage() {
                 <p className="text-xs text-fg/70 mb-1">+234 816 935 9828</p>
                 <p className="text-xs text-fg/70 mb-1">rapidmileslogistics@gmail.com</p>
                 <p className="text-xs text-fg/50 leading-relaxed">27 Bolorunduro Community,<br />Tanke Akata, Ilorin</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold text-muted-fg tracking-wider uppercase mb-4">Social</p>
+                <div className="flex items-center gap-3">
+                  <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-fg/70 hover:text-fg hover:bg-muted/80 transition-all" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                  </a>
+                  <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-fg/70 hover:text-fg hover:bg-muted/80 transition-all" aria-label="WhatsApp">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.536 3.657 1.458 5.156L2 22l4.987-1.417A9.98 9.98 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.25c-1.585 0-3.129-.44-4.465-1.268l-.327-.21-2.96.828.84-2.82-.19-.348A8.235 8.235 0 013.75 12c0-4.54 3.71-8.25 8.25-8.25S20.25 7.46 20.25 12 16.54 20.25 12 20.25z"/></svg>
+                  </a>
+                  <a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-fg/70 hover:text-fg hover:bg-muted/80 transition-all" aria-label="LinkedIn">
+                    <Linkedin className="w-4 h-4" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
