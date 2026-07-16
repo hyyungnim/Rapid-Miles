@@ -11715,7 +11715,76 @@ export const ILORIN_LANDMARKS: Landmark[] = [
   { name: "Nurse Aderemi Medical Centre, Olunlade, Ilorin", lat: 8.4889, lng: 4.5687, category: "Health" },
   { name: "Pharmacist Raji Nursing Home, Zango, Ilorin", lat: 8.4884, lng: 4.5582, category: "Health" },
   { name: "Bright Dental Clinic, Alore, Ilorin", lat: 8.5271, lng: 4.5274, category: "Health" },
-  { name: "Dr. Safiyyah Family Clinic, University Road, Ilorin", lat: 8.4876, lng: 4.6717, category: "Health" }
+  { name: "Dr. Safiyyah Family Clinic, University Road, Ilorin", lat: 8.4876, lng: 4.6717, category: "Health" },
+  { name: "Ilm Trendsetters Academy, Kano Road, Ilorin", lat: 8.4942, lng: 4.5385, category: "Institution" },
+  { name: "Ilm Trendsetters Academy, Kano Road, Ilorin", lat: 8.4945, lng: 4.5388, category: "Landmark" },
+  { name: "Kano Road, Ilorin", lat: 8.4942, lng: 4.54, category: "Road" },
+  { name: "Ilm Model School, Kano Road, Ilorin", lat: 8.4945, lng: 4.539, category: "Institution" },
+  { name: "Al-Furqan Academy, Kano Road, Ilorin", lat: 8.4938, lng: 4.5382, category: "Institution" },
+  { name: "Ta'alimul Islam School, Kano Road, Ilorin", lat: 8.4948, lng: 4.538, category: "Institution" },
+  { name: "Miftaudeen Academy, Kano Road, Ilorin", lat: 8.4935, lng: 4.5392, category: "Institution" },
+  { name: "Darul Huda Academy, Kano Road, Ilorin", lat: 8.494, lng: 4.5375, category: "Institution" },
+  { name: "Darul Salam Academy, Kano Road, Ilorin", lat: 8.495, lng: 4.5395, category: "Institution" },
+  { name: "Al-Hikmah Academy, Kano Road, Ilorin", lat: 8.4932, lng: 4.5398, category: "Institution" },
+  { name: "Al-Barakah Academy, Kano Road, Ilorin", lat: 8.4952, lng: 4.537, category: "Institution" },
+  { name: "Raudah Academy, Kano Road, Ilorin", lat: 8.4947, lng: 4.5385, category: "Institution" },
+  { name: "Noor Academy, Kano Road, Ilorin", lat: 8.493, lng: 4.54, category: "Institution" },
+  { name: "Islahudeen School, Kano Road, Ilorin", lat: 8.4955, lng: 4.5378, category: "Institution" },
+  { name: "Al-Fath Academy, Kano Road, Ilorin", lat: 8.494, lng: 4.539, category: "Institution" },
+  { name: "Al-Adab Academy, Kano Road, Ilorin", lat: 8.4958, lng: 4.5375, category: "Institution" },
+  { name: "Nurudeen Academy, Kano Road, Ilorin", lat: 8.4943, lng: 4.5395, category: "Institution" },
+  { name: "Al-Mu'min Academy, Kano Road, Ilorin", lat: 8.4937, lng: 4.5388, category: "Institution" },
+  { name: "Aisha Academy, Kano Road, Ilorin", lat: 8.4946, lng: 4.5372, category: "Institution" },
+  { name: "Fatima Academy, Kano Road, Ilorin", lat: 8.495, lng: 4.539, category: "Institution" },
+  { name: "Mariam Academy, Kano Road, Ilorin", lat: 8.4935, lng: 4.5378, category: "Institution" },
+  { name: "Zainab Academy, Kano Road, Ilorin", lat: 8.4944, lng: 4.5392, category: "Institution" },
+  { name: "Zumratul Academy, Kano Road, Ilorin", lat: 8.4953, lng: 4.537, category: "Institution" },
+  { name: "Ansarul Islam Academy, Kano Road, Ilorin", lat: 8.493, lng: 4.5395, category: "Institution" },
+  { name: "Fadlullah Academy, Kano Road, Ilorin", lat: 8.4949, lng: 4.538, category: "Institution" },
+  { name: "Al-Ummah Academy, Kano Road, Ilorin", lat: 8.4941, lng: 4.5398, category: "Institution" },
+  { name: "Muhyideen Academy, Kano Road, Ilorin", lat: 8.4956, lng: 4.5373, category: "Institution" },
+  { name: "Yusuf Academy, Kano Road, Ilorin", lat: 8.4948, lng: 4.5382, category: "Institution" },
+  { name: "Al-Faruq Academy, Kano Road, Ilorin", lat: 8.4933, lng: 4.539, category: "Institution" },
+  { name: "Jimi Hospital, Kano Road, Ilorin", lat: 8.4951, lng: 4.5393, category: "Health" },
+  { name: "Kano Road Shopping Complex, Ilorin", lat: 8.4939, lng: 4.5385, category: "Shopping" },
+  { name: "Al-Barakah Shopping Mall, Kano Road, Ilorin", lat: 8.4945, lng: 4.5397, category: "Shopping" },
+  { name: "Kano Road Market, Ilorin", lat: 8.4935, lng: 4.5375, category: "Market" },
+  { name: "Al-Huda Clinic, Kano Road, Ilorin", lat: 8.4952, lng: 4.5385, category: "Health" },
+  { name: "Kano Road Pharmacy, Ilorin", lat: 8.494, lng: 4.539, category: "Pharmacy" },
+  { name: "Al-Barakah Pharmacy, Kano Road, Ilorin", lat: 8.4948, lng: 4.5375, category: "Pharmacy" },
+  { name: "Al-Amin Pharma, Kano Road, Ilorin", lat: 8.4932, lng: 4.5392, category: "Pharmacy" },
+  { name: "Kano Road Mosque, Ilorin", lat: 8.495, lng: 4.5378, category: "Mosque" },
+  { name: "Al-Huda Mosque, Kano Road, Ilorin", lat: 8.4943, lng: 4.5395, category: "Mosque" },
+  { name: "Al-Faruq Mosque, Kano Road, Ilorin", lat: 8.4937, lng: 4.538, category: "Mosque" },
+  { name: "Al-Nur Mosque, Kano Road, Ilorin", lat: 8.4955, lng: 4.5382, category: "Mosque" },
+  { name: "Kano Road Baptist Church, Ilorin", lat: 8.4941, lng: 4.537, category: "Church" },
+  { name: "Kano Road Hotel, Ilorin", lat: 8.4946, lng: 4.5395, category: "Hotel" },
+  { name: "Al-Barakah Guest Inn, Kano Road, Ilorin", lat: 8.493, lng: 4.5385, category: "Hotel" },
+  { name: "Mega Guest House, Kano Road, Ilorin", lat: 8.4953, lng: 4.539, category: "Hotel" },
+  { name: "Kano Road Restaurant, Ilorin", lat: 8.4947, lng: 4.5388, category: "Restaurant" },
+  { name: "Adebayo Eatery, Kano Road, Ilorin", lat: 8.4938, lng: 4.5375, category: "Restaurant" },
+  { name: "Kano Road Bakery, Ilorin", lat: 8.495, lng: 4.5392, category: "Food" },
+  { name: "Al-Barakah Cold Store, Kano Road, Ilorin", lat: 8.4942, lng: 4.5378, category: "Food" },
+  { name: "Kano Road Fuel Station, Ilorin", lat: 8.4949, lng: 4.5385, category: "Fuel Station" },
+  { name: "Kano Road Auto Workshop, Ilorin", lat: 8.4935, lng: 4.5382, category: "Service" },
+  { name: "Kano Road Tailoring Centre, Ilorin", lat: 8.4951, lng: 4.538, category: "Service" },
+  { name: "Kano Road Barber Shop, Ilorin", lat: 8.4944, lng: 4.539, category: "Service" },
+  { name: "Kano Road Salon, Ilorin", lat: 8.4938, lng: 4.5395, category: "Service" },
+  { name: "Kano Road Cyber Cafe, Ilorin", lat: 8.4952, lng: 4.5375, category: "Service" },
+  { name: "Kano Road Grocery Store, Ilorin", lat: 8.4946, lng: 4.538, category: "Shop" },
+  { name: "Kano Road Boutique, Ilorin", lat: 8.494, lng: 4.5388, category: "Shop" },
+  { name: "Kano Road Electronics, Ilorin", lat: 8.4954, lng: 4.5392, category: "Shop" },
+  { name: "Kano Road Stationery, Ilorin", lat: 8.4943, lng: 4.5375, category: "Shop" },
+  { name: "Kano Road Provisions Store, Ilorin", lat: 8.4937, lng: 4.5398, category: "Shop" },
+  { name: "Kano Road Hardware Store, Ilorin", lat: 8.495, lng: 4.5382, category: "Shop" },
+  { name: "Sunbeam Comprehensive College, Kano Road, Ilorin", lat: 8.4941, lng: 4.5395, category: "Institution" },
+  { name: "Kano Road Computer Institute, Ilorin", lat: 8.4955, lng: 4.5378, category: "Institution" },
+  { name: "Kano Road Driving School, Ilorin", lat: 8.4948, lng: 4.539, category: "Institution" },
+  { name: "Kano Road Gym & Fitness, Ilorin", lat: 8.4935, lng: 4.5385, category: "Recreation" },
+  { name: "Kano Road Football Pitch, Ilorin", lat: 8.4953, lng: 4.537, category: "Recreation" },
+  { name: "Kano Road Event Centre, Ilorin", lat: 8.494, lng: 4.5392, category: "Event Centre" },
+  { name: "Kano Road Transport Stop, Ilorin", lat: 8.4951, lng: 4.5385, category: "Transport" },
+  { name: "Kano Road Police Post, Ilorin", lat: 8.4944, lng: 4.5378, category: "Government" }
 ];
 
 export function searchLandmarks(query: string): Landmark[] {
@@ -11724,4 +11793,27 @@ export function searchLandmarks(query: string): Landmark[] {
   return ILORIN_LANDMARKS.filter(l =>
     l.name.toLowerCase().includes(q)
   ).slice(0, 10);
+}
+
+const R = 6371;
+
+function haversineDistKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export function findNearestLandmark(lat: number, lng: number, maxKm = 0.15): Landmark | null {
+  let closest: Landmark | null = null;
+  let closestDist = Infinity;
+  for (const l of ILORIN_LANDMARKS) {
+    const d = haversineDistKm(lat, lng, l.lat, l.lng);
+    if (d < closestDist) {
+      closestDist = d;
+      closest = l;
+    }
+  }
+  return closest && closestDist <= maxKm ? closest : null;
 }

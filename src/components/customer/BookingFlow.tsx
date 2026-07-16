@@ -6,6 +6,7 @@ import { AddressAutocomplete } from "../map/AddressAutocomplete";
 import { calcDeliveryFee, fmtCurrency } from "../../lib/constants";
 import { getDrivingDistance } from "../../lib/routing";
 import { reverseGeocode } from "../../lib/photon";
+import { findNearestLandmark } from "../../lib/ilorin-landmarks";
 
 const WEIGHT_KG: Record<string, number> = { light: 0.5, medium: 3, heavy: 7 };
 
@@ -114,11 +115,12 @@ export function BookingFlow() {
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         setPickupCoords({ lat, lng });
-        const result = await reverseGeocode(lat, lng);
-        if (result) {
-          update("pickup", result.display_name);
+        const nearby = findNearestLandmark(lat, lng);
+        if (nearby) {
+          update("pickup", nearby.name);
         } else {
-          update("pickup", `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+          const result = await reverseGeocode(lat, lng);
+          update("pickup", result ? result.display_name : `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
         }
         setLocating(false);
       },
