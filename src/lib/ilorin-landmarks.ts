@@ -428,7 +428,6 @@ export const ILORIN_LANDMARKS: Landmark[] = [
   { name: "Baboko Market, Ilorin", lat: 8.5189, lng: 4.5339, category: "Market" },
   { name: "Ita Alamu Market, Ilorin", lat: 8.5025, lng: 4.5356, category: "Market" },
   { name: "Agbo Oba Market, Ilorin", lat: 8.5042, lng: 4.5789, category: "Market" },
-];
   { name: "Oloje Market, Ilorin", lat: 8.4911, lng: 4.5097, category: "Market" },
   { name: "Pakata Market, Ilorin", lat: 8.5061, lng: 4.5228, category: "Market" },
   { name: "Alanamu Market, Ilorin", lat: 8.4908, lng: 4.5242, category: "Market" },
