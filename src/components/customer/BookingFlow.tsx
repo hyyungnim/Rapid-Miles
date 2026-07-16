@@ -4,15 +4,7 @@ import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCirc
 import { useNavigate } from "react-router";
 import { AddressAutocomplete } from "../map/AddressAutocomplete";
 import { calcDeliveryFee, fmtCurrency } from "../../lib/constants";
-
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+import { getDrivingDistance } from "../../lib/mapbox";
 
 const WEIGHT_KG: Record<string, number> = { light: 0.5, medium: 3, heavy: 7 };
 
@@ -25,6 +17,8 @@ export function BookingFlow() {
   const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [durationMin, setDurationMin] = useState<number | null>(null);
+  const [calculating, setCalculating] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState(false);
   const [booked, setBooked] = useState(false);
@@ -36,10 +30,27 @@ export function BookingFlow() {
 
   useEffect(() => {
     if (pickupCoords && dropoffCoords) {
-      const d = haversineKm(pickupCoords.lat, pickupCoords.lng, dropoffCoords.lat, dropoffCoords.lng);
-      setDistanceKm(Math.round(d * 10) / 10);
+      setCalculating(true);
+      getDrivingDistance([pickupCoords.lng, pickupCoords.lat], [dropoffCoords.lng, dropoffCoords.lat])
+        .then(result => {
+          if (result) {
+            setDistanceKm(result.distanceKm);
+            setDurationMin(result.durationMin);
+          } else {
+            const d = haversineKm(pickupCoords.lat, pickupCoords.lng, dropoffCoords.lat, dropoffCoords.lng);
+            setDistanceKm(Math.round(d * 10) / 10);
+            setDurationMin(null);
+          }
+        })
+        .catch(() => {
+          const d = haversineKm(pickupCoords.lat, pickupCoords.lng, dropoffCoords.lat, dropoffCoords.lng);
+          setDistanceKm(Math.round(d * 10) / 10);
+          setDurationMin(null);
+        })
+        .finally(() => setCalculating(false));
     } else {
       setDistanceKm(null);
+      setDurationMin(null);
     }
   }, [pickupCoords, dropoffCoords]);
 
@@ -118,14 +129,20 @@ export function BookingFlow() {
               placeholder="Where is it going?"
               icon={<Navigation className="w-4 h-4 text-muted-fg shrink-0" />} />
           </div>
-          {distanceKm !== null && (
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-light/50 text-sm">
-              <span className="text-muted-fg">Distance</span>
-              <span className="font-semibold text-fg">{distanceKm} km</span>
-            </div>
-          )}
-          <button onClick={() => setStep(2)}
-            className="w-full py-2.5 rounded-full bg-primary text-primary-fg text-sm font-medium hover:bg-primary/90 transition-colors">
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-light/50 text-sm min-h-[44px]">
+            <span className="text-muted-fg">Distance</span>
+            {calculating ? (
+              <span className="w-4 h-4 rounded-full border border-muted-fg border-t-transparent animate-spin" />
+            ) : distanceKm !== null ? (
+              <span className="font-semibold text-fg">
+                {distanceKm} km{durationMin ? ` · ${durationMin} min` : ""}
+              </span>
+            ) : (
+              <span className="text-muted-fg/50">Select both locations</span>
+            )}
+          </div>
+          <button onClick={() => setStep(2)} disabled={!distanceKm}
+            className="w-full py-2.5 rounded-full bg-primary text-primary-fg text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors">
             Continue
           </button>
         </motion.div>
@@ -156,12 +173,10 @@ export function BookingFlow() {
               ))}
             </div>
           </div>
-          {fee !== null && (
-            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-light/50 text-sm">
-              <span className="text-muted-fg">Estimated fare</span>
-              <span className="font-semibold text-fg">{fmtCurrency(fee)}</span>
-            </div>
-          )}
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-light/50 text-sm">
+            <span className="text-muted-fg">Estimated fare</span>
+            <span className="font-semibold text-fg">{fee !== null ? fmtCurrency(fee) : "—"}</span>
+          </div>
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">
               Package photo <span className="text-error">*</span>
@@ -214,6 +229,7 @@ export function BookingFlow() {
               { label: "Package", val: form.description || "Not specified" },
               { label: "Weight", val: form.weight },
               { label: "Distance", val: distanceKm !== null ? `${distanceKm} km` : "—" },
+              { label: "Duration", val: durationMin !== null ? `${durationMin} min` : "—" },
               { label: "Fee", val: fee !== null ? fmtCurrency(fee) : "—" },
               { label: "Recipient", val: `${form.recipientName}, ${form.recipientPhone}` },
             ].map(r => (
@@ -237,4 +253,13 @@ export function BookingFlow() {
       )}
     </div>
   );
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }

@@ -1,12 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import { searchLandmarks, type Landmark } from "../../lib/ilorin-landmarks";
-
-interface Suggestion { place_id: string; display_name: string; lat: string; lon: string; }
+import { geocodeSearch, type MapboxSuggestion } from "../../lib/mapbox";
 
 interface Props {
   value: string;
   onChange: (val: string) => void;
-  onSelect?: (s: Suggestion) => void;
+  onSelect?: (s: { place_id: string; display_name: string; lat: string; lon: string }) => void;
   placeholder?: string;
   icon?: React.ReactNode;
 }
@@ -14,12 +13,10 @@ interface Props {
 interface CombinedSuggestion {
   id: string;
   label: string;
-  lat: string;
-  lon: string;
-  source: "landmark" | "nominatim";
+  lat: number;
+  lng: number;
+  source: "landmark" | "mapbox";
 }
-
-const ILORIN_BBOX = "4.40,8.65,4.75,8.40";
 
 export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "Enter address", icon }: Props) {
   const [suggestions, setSuggestions] = useState<CombinedSuggestion[]>([]);
@@ -33,28 +30,23 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
     const local = searchLandmarks(q).map((l: Landmark, i: number) => ({
       id: `lm-${i}`,
       label: l.name,
-      lat: String(l.lat),
-      lon: String(l.lng),
+      lat: l.lat,
+      lng: l.lng,
       source: "landmark" as const,
     }));
 
     setFetching(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&countrycodes=NG&viewbox=${ILORIN_BBOX}&bounded=0&dedup=1`
-      );
-      if (!res.ok) throw new Error("Network error");
-      const data: Suggestion[] = await res.json();
-      const osm = data.map((s) => ({
-        id: s.place_id,
-        label: s.display_name,
-        lat: s.lat,
-        lon: s.lon,
-        source: "nominatim" as const,
+      const features = await geocodeSearch(q);
+      const mb = features.map((f: MapboxSuggestion) => ({
+        id: f.id,
+        label: f.place_name,
+        lat: f.center[1],
+        lng: f.center[0],
+        source: "mapbox" as const,
       }));
-
       const seen = new Set(local.map(s => s.label.toLowerCase()));
-      const merged = [...local, ...osm.filter(s => !seen.has(s.label.toLowerCase()))];
+      const merged = [...local, ...mb.filter(s => !seen.has(s.label.toLowerCase()))];
       setSuggestions(merged);
       setOpen(merged.length > 0);
     } catch {
@@ -74,7 +66,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
   const handleSelect = (s: CombinedSuggestion) => {
     onChange(s.label);
     setOpen(false);
-    onSelect?.({ place_id: s.id, display_name: s.label, lat: s.lat, lon: s.lon });
+    onSelect?.({ place_id: s.id, display_name: s.label, lat: String(s.lat), lon: String(s.lng) });
   };
 
   return (
@@ -92,6 +84,9 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
               className="w-full text-left px-4 py-2.5 text-sm text-fg hover:bg-primary-light hover:text-primary border-b border-border last:border-0 transition-colors flex items-center gap-2">
               {s.source === "landmark" && (
                 <span className="text-[10px] font-medium text-accent bg-accent-light px-1.5 py-0.5 rounded shrink-0">Landmark</span>
+              )}
+              {s.source === "mapbox" && (
+                <span className="text-[10px] font-medium text-primary bg-primary-light px-1.5 py-0.5 rounded shrink-0">Map</span>
               )}
               <span className="truncate">{s.label}</span>
             </button>
