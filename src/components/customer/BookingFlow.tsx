@@ -4,7 +4,7 @@ import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCirc
 import { useNavigate } from "react-router";
 import { AddressAutocomplete } from "../map/AddressAutocomplete";
 import { calcDeliveryFee, fmtCurrency } from "../../lib/constants";
-import { getDrivingDistance } from "../../lib/mapbox";
+import { getDrivingDistance } from "../../lib/routing";
 
 const WEIGHT_KG: Record<string, number> = { light: 0.5, medium: 3, heavy: 7 };
 
@@ -31,7 +31,7 @@ export function BookingFlow() {
   useEffect(() => {
     if (pickupCoords && dropoffCoords) {
       setCalculating(true);
-      getDrivingDistance([pickupCoords.lng, pickupCoords.lat], [dropoffCoords.lng, dropoffCoords.lat])
+      getDrivingDistance(pickupCoords, dropoffCoords)
         .then(result => {
           if (result) {
             setDistanceKm(result.distanceKm);
