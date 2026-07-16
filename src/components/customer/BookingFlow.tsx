@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
 import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCircle, AlertTriangle, LocateFixed, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router";
