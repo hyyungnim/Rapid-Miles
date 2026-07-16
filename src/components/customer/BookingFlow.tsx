@@ -1,8 +1,20 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router";
 import { AddressAutocomplete } from "../map/AddressAutocomplete";
+import { calcDeliveryFee, fmtCurrency } from "../../lib/constants";
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const WEIGHT_KG: Record<string, number> = { light: 0.5, medium: 3, heavy: 7 };
 
 export function BookingFlow() {
   const [step, setStep] = useState(1);
@@ -10,6 +22,9 @@ export function BookingFlow() {
     pickup: "", dropoff: "", description: "", recipientName: "", recipientPhone: "",
     weight: "light",
   });
+  const [pickupCoords, setPickupCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [dropoffCoords, setDropoffCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState(false);
   const [booked, setBooked] = useState(false);
@@ -18,6 +33,17 @@ export function BookingFlow() {
   const navigate = useNavigate();
 
   const update = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    if (pickupCoords && dropoffCoords) {
+      const d = haversineKm(pickupCoords.lat, pickupCoords.lng, dropoffCoords.lat, dropoffCoords.lng);
+      setDistanceKm(Math.round(d * 10) / 10);
+    } else {
+      setDistanceKm(null);
+    }
+  }, [pickupCoords, dropoffCoords]);
+
+  const fee = distanceKm !== null ? calcDeliveryFee(distanceKm, WEIGHT_KG[form.weight]) : null;
 
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,7 +75,7 @@ export function BookingFlow() {
         <p className="text-sm text-muted-fg mb-2">Your tracking ID</p>
         <p className="text-3xl font-bold text-primary tracking-tight mb-8">{trackingId}</p>
         <button onClick={() => navigate(0)}
-          className="px-8 py-3 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
+          className="px-8 py-3 rounded-full bg-primary text-primary-fg text-sm font-medium hover:bg-primary/90 transition-colors">
           Book another
         </button>
       </motion.div>
@@ -67,7 +93,7 @@ export function BookingFlow() {
           <div key={s.n} className="flex items-center flex-1">
             <div className="flex items-center gap-2">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold transition-colors ${
-                step >= s.n ? "bg-primary text-white" : "bg-border text-muted-fg"
+                step >= s.n ? "bg-primary text-primary-fg" : "bg-border text-muted-fg"
               }`}>{s.n}</div>
               <span className={`text-xs font-medium ${step >= s.n ? "text-fg" : "text-muted-fg"}`}>{s.label}</span>
             </div>
@@ -80,15 +106,26 @@ export function BookingFlow() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 max-w-lg">
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">Pickup</label>
-            <AddressAutocomplete value={form.pickup} onChange={v => update("pickup", v)} placeholder="Where to collect?"
+            <AddressAutocomplete value={form.pickup} onChange={v => update("pickup", v)}
+              onSelect={s => setPickupCoords({ lat: parseFloat(s.lat), lng: parseFloat(s.lon) })}
+              placeholder="Where to collect?"
               icon={<MapPin className="w-4 h-4 text-muted-fg shrink-0" />} />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">Drop-off</label>
-            <AddressAutocomplete value={form.dropoff} onChange={v => update("dropoff", v)} placeholder="Where is it going?"
+            <AddressAutocomplete value={form.dropoff} onChange={v => update("dropoff", v)}
+              onSelect={s => setDropoffCoords({ lat: parseFloat(s.lat), lng: parseFloat(s.lon) })}
+              placeholder="Where is it going?"
               icon={<Navigation className="w-4 h-4 text-muted-fg shrink-0" />} />
           </div>
-          <button onClick={() => setStep(2)} className="w-full py-2.5 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
+          {distanceKm !== null && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-light/50 text-sm">
+              <span className="text-muted-fg">Distance</span>
+              <span className="font-semibold text-fg">{distanceKm} km</span>
+            </div>
+          )}
+          <button onClick={() => setStep(2)}
+            className="w-full py-2.5 rounded-full bg-primary text-primary-fg text-sm font-medium hover:bg-primary/90 transition-colors">
             Continue
           </button>
         </motion.div>
@@ -114,11 +151,17 @@ export function BookingFlow() {
               ].map(w => (
                 <button key={w.k} type="button" onClick={() => update("weight", w.k)}
                   className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                    form.weight === w.k ? "bg-[#0f172a] text-white" : "bg-muted text-muted-fg hover:bg-border"
+                    form.weight === w.k ? "bg-primary text-primary-fg" : "bg-muted text-muted-fg hover:bg-border"
                   }`}>{w.label}</button>
               ))}
             </div>
           </div>
+          {fee !== null && (
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-light/50 text-sm">
+              <span className="text-muted-fg">Estimated fare</span>
+              <span className="font-semibold text-fg">{fmtCurrency(fee)}</span>
+            </div>
+          )}
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">
               Package photo <span className="text-error">*</span>
@@ -157,7 +200,7 @@ export function BookingFlow() {
           </div>
           <div className="flex gap-2 pt-2">
             <button onClick={() => setStep(1)} className="px-5 py-2.5 rounded-full text-sm font-medium text-muted-fg hover:text-fg transition-colors">Back</button>
-            <button onClick={handleReview} className="flex-1 py-2.5 rounded-full bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">Review</button>
+            <button onClick={handleReview} className="flex-1 py-2.5 rounded-full bg-primary text-primary-fg text-sm font-medium hover:bg-primary/90 transition-colors">Review</button>
           </div>
         </motion.div>
       )}
@@ -170,6 +213,8 @@ export function BookingFlow() {
               { label: "Drop-off", val: form.dropoff || "Not set" },
               { label: "Package", val: form.description || "Not specified" },
               { label: "Weight", val: form.weight },
+              { label: "Distance", val: distanceKm !== null ? `${distanceKm} km` : "—" },
+              { label: "Fee", val: fee !== null ? fmtCurrency(fee) : "—" },
               { label: "Recipient", val: `${form.recipientName}, ${form.recipientPhone}` },
             ].map(r => (
               <div key={r.label} className="flex items-start justify-between gap-4">
@@ -186,7 +231,7 @@ export function BookingFlow() {
           </div>
           <button onClick={handleConfirm}
             className="w-full py-3 rounded-full bg-accent text-accent-fg font-semibold text-sm hover:bg-accent/90 transition-all flex items-center justify-center gap-2">
-            Confirm & book <ArrowRight className="w-4 h-4" />
+            Confirm & book · {fee !== null ? fmtCurrency(fee) : ""} <ArrowRight className="w-4 h-4" />
           </button>
         </motion.div>
       )}

@@ -83,8 +83,14 @@ export function CustomerAuth() {
               {showPw ? <EyeOff className="w-4 h-4 text-muted-fg" /> : <Eye className="w-4 h-4 text-muted-fg" />}
             </button>
           </div>
+          {mode === "signin" && (
+            <button type="button" onClick={() => navigate("/customer/auth/forgot")}
+              className="text-xs text-muted-fg hover:text-primary transition-colors block ml-auto -mt-2">
+              Forgot password?
+            </button>
+          )}
           <button type="submit" disabled={loading}
-            className="w-full py-3 rounded-full bg-[#0f172a] text-white font-medium text-sm hover:bg-[#1e293b] disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+            className="w-full py-3 rounded-full bg-primary text-primary-fg font-medium text-sm hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
             {loading ? (mode === "signin" ? "Signing in..." : "Creating...") : (mode === "signin" ? "Sign in" : "Create account")} <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </form>

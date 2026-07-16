@@ -16,6 +16,8 @@ interface AuthContextValue extends AuthState {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -244,8 +246,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function forgotPassword(email: string) {
+    if (supabase) {
+      try {
+        const sb = requireSupabase();
+        const { error } = await sb.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw new Error(error.message);
+      } catch (e: any) {
+        setState((s) => ({ ...s, error: e.message }));
+        throw e;
+      }
+      return;
+    }
+  }
+
+  async function resetPassword(newPassword: string) {
+    if (supabase) {
+      try {
+        const sb = requireSupabase();
+        const { error } = await sb.auth.updateUser({ password: newPassword });
+        if (error) throw new Error(error.message);
+      } catch (e: any) {
+        setState((s) => ({ ...s, error: e.message }));
+        throw e;
+      }
+      return;
+    }
+    const err = new Error("Password reset is not available offline");
+    setState((s) => ({ ...s, error: err.message }));
+    throw err;
+  }
+
   return (
-    <AuthContext.Provider value={{ ...state, signUp, signIn, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ ...state, signUp, signIn, signOut, updateProfile, forgotPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

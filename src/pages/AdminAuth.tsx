@@ -56,7 +56,7 @@ export function AdminAuth() {
             </button>
           </div>
           <button type="submit" disabled={loading}
-            className="w-full py-3 rounded-full bg-[#0f172a] text-white font-medium text-sm hover:bg-[#1e293b] disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+            className="w-full py-3 rounded-full bg-primary text-primary-fg font-medium text-sm hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
             {loading ? "Signing in..." : "Sign in"} <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </form>
