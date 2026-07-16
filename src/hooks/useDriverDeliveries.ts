@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 
@@ -19,6 +19,7 @@ export function useDriverDeliveries() {
   const { user } = useAuth();
   const [activeDeliveries, setActiveDeliveries] = useState<DriverDelivery[]>([]);
   const [history, setHistory] = useState<DriverDelivery[]>([]);
+  const [allBookings, setAllBookings] = useState<DriverDelivery[]>([]);
   const [loading, setLoading] = useState(true);
 
   function mapBookings(bookings: any[]): DriverDelivery[] {
@@ -35,6 +36,32 @@ export function useDriverDeliveries() {
     }));
   }
 
+  const updateBookingStatus = useCallback(async (trackingNumber: string, newStatus: string) => {
+    const driverId = user?.id || null;
+    if (supabase) {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: newStatus, driver_id: driverId })
+        .eq("tracking_number", trackingNumber);
+      if (error) {
+        // Fallback to localStorage
+        const all: any[] = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+        const updated = all.map((b: any) =>
+          b.tracking_number === trackingNumber ? { ...b, status: newStatus, driver_id: driverId } : b
+        );
+        localStorage.setItem("rm_bookings", JSON.stringify(updated));
+      }
+    } else {
+      const all: any[] = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+      const updated = all.map((b: any) =>
+        b.tracking_number === trackingNumber ? { ...b, status: newStatus, driver_id: driverId } : b
+      );
+      localStorage.setItem("rm_bookings", JSON.stringify(updated));
+    }
+    // Refresh
+    window.location.reload();
+  }, [user]);
+
   useEffect(() => {
     if (!user) {
       setLoading(false);
@@ -48,6 +75,7 @@ export function useDriverDeliveries() {
       if (!supabase) {
         setActiveDeliveries(localMapped.filter(d => !["delivered", "cancelled"].includes(d.status)));
         setHistory(localMapped.filter(d => ["delivered", "cancelled"].includes(d.status)));
+        setAllBookings(localMapped);
         setLoading(false);
         return;
       }
@@ -92,10 +120,12 @@ export function useDriverDeliveries() {
 
         setActiveDeliveries(deduped.filter(d => !["delivered", "cancelled"].includes(d.status)));
         setHistory(deduped.filter(d => ["delivered", "cancelled"].includes(d.status)));
+        setAllBookings(deduped);
       } catch (e) {
         console.warn("Driver Supabase fetch failed, using local data only:", e);
         setActiveDeliveries(localMapped.filter(d => !["delivered", "cancelled"].includes(d.status)));
         setHistory(localMapped.filter(d => ["delivered", "cancelled"].includes(d.status)));
+        setAllBookings(localMapped);
       }
 
       setLoading(false);
@@ -104,5 +134,5 @@ export function useDriverDeliveries() {
     fetchAll();
   }, [user]);
 
-  return { activeDeliveries, history, loading };
+  return { activeDeliveries, history, allBookings, loading, updateBookingStatus };
 }

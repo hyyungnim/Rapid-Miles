@@ -3,16 +3,17 @@ import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import {
   Navigation, Clock, Package, ChevronDown, Phone,
-  CheckCircle, XCircle, Truck, LogOut
+  CheckCircle, XCircle, Truck, LogOut, List
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useDriverDeliveries } from "../../hooks/useDriverDeliveries";
 
-type Tab = "active" | "history";
+type Tab = "active" | "history" | "bookings";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "active", label: "Active", icon: Navigation },
   { key: "history", label: "History", icon: Clock },
+  { key: "bookings", label: "Bookings", icon: List },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -34,14 +35,14 @@ export function DriverDashboard() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { activeDeliveries, history, loading } = useDriverDeliveries();
+  const { activeDeliveries, history, allBookings, loading, updateBookingStatus } = useDriverDeliveries();
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
 
-  const deliveries = tab === "active" ? activeDeliveries : history;
+  const deliveries = tab === "active" ? activeDeliveries : tab === "history" ? history : allBookings;
 
   return (
     <div className="min-h-screen bg-bg">
@@ -102,7 +103,7 @@ export function DriverDashboard() {
             <motion.div key={tab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg space-y-2">
               {deliveries.length === 0 && (
                 <p className="text-sm text-muted-fg text-center py-12">
-                  {tab === "active" ? "No active deliveries" : "No delivery history"}
+                  {tab === "active" ? "No active deliveries" : tab === "history" ? "No delivery history" : "No bookings available"}
                 </p>
               )}
               {deliveries.map(d => (
@@ -148,10 +149,10 @@ export function DriverDashboard() {
                             )}
                             {d.status === "pending" && (
                               <>
-                                <button className="px-3 py-1.5 rounded-full bg-success text-white text-xs font-medium hover:bg-success/90 transition-colors flex items-center gap-1.5">
+                                <button onClick={() => updateBookingStatus(d.id, "accepted")} className="px-3 py-1.5 rounded-full bg-success text-white text-xs font-medium hover:bg-success/90 transition-colors flex items-center gap-1.5">
                                   <CheckCircle className="w-3 h-3" /> Accept
                                 </button>
-                                <button className="px-3 py-1.5 rounded-full border border-border text-muted-fg text-xs font-medium hover:text-fg transition-colors flex items-center gap-1.5">
+                                <button onClick={() => updateBookingStatus(d.id, "cancelled")} className="px-3 py-1.5 rounded-full border border-border text-muted-fg text-xs font-medium hover:text-fg transition-colors flex items-center gap-1.5">
                                   <XCircle className="w-3 h-3" /> Decline
                                 </button>
                               </>

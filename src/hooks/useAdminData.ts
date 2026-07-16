@@ -22,6 +22,19 @@ export interface RecentDelivery {
   amount: number;
 }
 
+export interface AllBooking {
+  tracking_number: string;
+  user_id: string;
+  driver_id: string | null;
+  customer_name: string;
+  driver_name: string;
+  status: string;
+  amount: number;
+  pickup: string;
+  dropoff: string;
+  created_at: string;
+}
+
 export interface TopDriver {
   id: string;
   name: string;
@@ -50,6 +63,7 @@ export interface Analytics {
 export function useAdminData() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentDeliveries, setRecentDeliveries] = useState<RecentDelivery[]>([]);
+  const [allBookings, setAllBookings] = useState<AllBooking[]>([]);
   const [topDrivers, setTopDrivers] = useState<TopDriver[]>([]);
   const [revenue, setRevenue] = useState<RevenueBreakdown | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -73,7 +87,8 @@ export function useAdminData() {
           const [{ count: dCount }, { count: custCount }, { count: drCount },
             { data: recentData }, { data: driversData },
             { data: revToday }, { data: revWeek }, { data: revMonth }, { data: revAll },
-            { data: monthlyData }, { data: allBookings }] = await Promise.all([
+            { data: monthlyData }, { data: allBookings }, { data: allBookingsFull },
+          ] = await Promise.all([
             supabase.from("bookings").select("*", { count: "exact", head: true }),
             supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "customer"),
             supabase.from("drivers").select("*", { count: "exact", head: true }),
@@ -85,6 +100,7 @@ export function useAdminData() {
             supabase.from("bookings").select("delivery_fee").eq("status", "delivered"),
             supabase.from("bookings").select("delivery_fee, created_at").eq("status", "delivered"),
             supabase.from("bookings").select("status"),
+            supabase.from("bookings").select("*").order("created_at", { ascending: false }),
           ]);
 
           const supTotalRevenue = (revAll || []).reduce((s: number, r: any) => s + (r.delivery_fee || 0), 0);
@@ -124,6 +140,39 @@ export function useAdminData() {
           }));
 
           setRecentDeliveries([...localRecentMapped, ...supRecent].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 5));
+
+          // Merge all bookings for the bookings tab
+          const supAllMapped = (allBookingsFull || []).map((b: any) => ({
+            tracking_number: b.tracking_number || b.id,
+            user_id: b.user_id || "",
+            driver_id: b.driver_id || null,
+            customer_name: profileMap.get(b.user_id) || "Unknown",
+            driver_name: b.driver_id ? (profileMap.get(b.driver_id) || "Assigned") : "Unassigned",
+            status: b.status,
+            amount: b.delivery_fee || 0,
+            pickup: b.pickup_address || "",
+            dropoff: b.delivery_address || "",
+            created_at: b.created_at || "",
+          }));
+          const localAllMapped = localBookings.map((b: any) => ({
+            tracking_number: b.tracking_number,
+            user_id: b.user_id || "",
+            driver_id: b.driver_id || null,
+            customer_name: b.user_id || "You",
+            driver_name: b.driver_id ? "Assigned" : "Unassigned",
+            status: b.status,
+            amount: b.delivery_fee || 0,
+            pickup: b.pickup_address || "",
+            dropoff: b.delivery_address || "",
+            created_at: b.created_at || "",
+          }));
+          const seen = new Set<string>();
+          const mergedAll = [...localAllMapped, ...supAllMapped].filter(b => {
+            if (seen.has(b.tracking_number)) return false;
+            seen.add(b.tracking_number);
+            return true;
+          });
+          setAllBookings(mergedAll.sort((a, b) => b.created_at.localeCompare(a.created_at)));
 
           setTopDrivers((driversData || []).map((d: any) => ({
             id: d.id, name: d.full_name,
@@ -175,6 +224,13 @@ export function useAdminData() {
         customer_name: b.user_id || "You", driver_name: "Unassigned",
         status: b.status, amount: b.delivery_fee || 0,
       })));
+      setAllBookings(localBookings.map((b: any) => ({
+        tracking_number: b.tracking_number, user_id: b.user_id || "",
+        driver_id: b.driver_id || null, customer_name: b.user_id || "You",
+        driver_name: "Unassigned", status: b.status,
+        amount: b.delivery_fee || 0, pickup: b.pickup_address || "",
+        dropoff: b.delivery_address || "", created_at: b.created_at || "",
+      })));
       setTopDrivers([]);
       setRevenue({ today: localRevenue, week: localRevenue, month: localRevenue, allTime: localRevenue, monthly: Array(12).fill(0) });
       setAnalytics({ avgDeliveryTime: "—", onTimeRate: "—", avgDistance: "—", repeatRate: "—", avgRating: "—", cancellation: "—" });
@@ -184,5 +240,5 @@ export function useAdminData() {
     fetchData();
   }, []);
 
-  return { stats, recentDeliveries, topDrivers, revenue, analytics, loading };
+  return { stats, recentDeliveries, allBookings, topDrivers, revenue, analytics, loading };
 }

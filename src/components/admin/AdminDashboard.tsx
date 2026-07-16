@@ -3,17 +3,18 @@ import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   BarChart3, Users, UserCheck, Package, DollarSign, TrendingUp,
-  Truck, Activity, ArrowUpRight, Clock, MapPin, LogOut
+  Truck, Activity, ArrowUpRight, Clock, MapPin, LogOut, List
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAdminData } from "../../hooks/useAdminData";
 
-type Tab = "overview" | "analytics" | "revenue";
+type Tab = "overview" | "analytics" | "revenue" | "bookings";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "overview", label: "Overview", icon: BarChart3 },
   { key: "analytics", label: "Analytics", icon: TrendingUp },
   { key: "revenue", label: "Revenue", icon: DollarSign },
+  { key: "bookings", label: "Bookings", icon: List },
 ];
 
 function formatCurrency(n: number) {
@@ -26,7 +27,7 @@ export function AdminDashboard() {
   const [tab, setTab] = useState<Tab>("overview");
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
-  const { stats, recentDeliveries, topDrivers, revenue, analytics, loading } = useAdminData();
+  const { stats, recentDeliveries, allBookings, topDrivers, revenue, analytics, loading } = useAdminData();
 
   const handleSignOut = async () => {
     await signOut();
@@ -213,6 +214,48 @@ export function AdminDashboard() {
                 </>
               )}
               {!revenue && <p className="text-sm text-muted-fg text-center py-12">No revenue data yet</p>}
+            </motion.div>
+          )}
+
+          {tab === "bookings" && (
+            <motion.div key="bookings" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              <p className="text-lg font-semibold text-fg mb-4">All bookings</p>
+              {allBookings.length === 0 ? (
+                <p className="text-sm text-muted-fg text-center py-12">No bookings yet</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-muted-fg border-b border-border">
+                        <th className="pb-3 font-medium">Tracking</th>
+                        <th className="pb-3 font-medium">Customer</th>
+                        <th className="pb-3 font-medium">Driver</th>
+                        <th className="pb-3 font-medium">Pickup</th>
+                        <th className="pb-3 font-medium">Drop-off</th>
+                        <th className="pb-3 font-medium">Fee</th>
+                        <th className="pb-3 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allBookings.map(b => (
+                        <tr key={b.tracking_number} className="border-b border-border last:border-0">
+                          <td className="py-3 text-fg font-medium">{b.tracking_number}</td>
+                          <td className="py-3 text-fg">{b.customer_name}</td>
+                          <td className="py-3 text-fg">{b.driver_name}</td>
+                          <td className="py-3 text-muted-fg max-w-[160px] truncate">{b.pickup}</td>
+                          <td className="py-3 text-muted-fg max-w-[160px] truncate">{b.dropoff}</td>
+                          <td className="py-3 text-fg">{formatCurrency(b.amount)}</td>
+                          <td className="py-3">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLE[b.status] || STATUS_STYLE.pending}`}>
+                              {b.status.replace("_", " ")}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
