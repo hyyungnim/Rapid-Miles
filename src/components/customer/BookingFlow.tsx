@@ -1,12 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCircle } from "lucide-react";
+import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCircle, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router";
 import { AddressAutocomplete } from "../map/AddressAutocomplete";
 import { calcDeliveryFee, fmtCurrency } from "../../lib/constants";
 import { getDrivingDistance } from "../../lib/routing";
 
 const WEIGHT_KG: Record<string, number> = { light: 0.5, medium: 3, heavy: 7 };
+
+function isValidCoord(c: { lat: number; lng: number }): boolean {
+  return isFinite(c.lat) && isFinite(c.lng) && Math.abs(c.lat) > 0.01 && Math.abs(c.lng) > 0.01;
+}
+
+const SAME_LOCATION_WARNING = "Pickup and drop-off are the same location. Distance-based fee will be ₦0.";
 
 export function BookingFlow() {
   const [step, setStep] = useState(1);
@@ -19,6 +25,8 @@ export function BookingFlow() {
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [durationMin, setDurationMin] = useState<number | null>(null);
   const [calculating, setCalculating] = useState(false);
+  const [routeError, setRouteError] = useState(false);
+  const [routingSource, setRoutingSource] = useState<"osrm" | "estimate" | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState(false);
   const [booked, setBooked] = useState(false);
@@ -28,33 +36,69 @@ export function BookingFlow() {
 
   const update = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
+  const sameLocation = pickupCoords && dropoffCoords &&
+    Math.abs(pickupCoords.lat - dropoffCoords.lat) < 0.001 &&
+    Math.abs(pickupCoords.lng - dropoffCoords.lng) < 0.001;
+
   useEffect(() => {
-    if (pickupCoords && dropoffCoords) {
-      setCalculating(true);
-      getDrivingDistance(pickupCoords, dropoffCoords)
-        .then(result => {
-          if (result) {
-            setDistanceKm(result.distanceKm);
-            setDurationMin(result.durationMin);
-          } else {
-            const d = haversineKm(pickupCoords.lat, pickupCoords.lng, dropoffCoords.lat, dropoffCoords.lng);
-            setDistanceKm(Math.round(d * 10) / 10);
-            setDurationMin(null);
-          }
-        })
-        .catch(() => {
-          const d = haversineKm(pickupCoords.lat, pickupCoords.lng, dropoffCoords.lat, dropoffCoords.lng);
-          setDistanceKm(Math.round(d * 10) / 10);
-          setDurationMin(null);
-        })
-        .finally(() => setCalculating(false));
-    } else {
+    if (!pickupCoords || !dropoffCoords) {
       setDistanceKm(null);
       setDurationMin(null);
+      setRouteError(false);
+      setRoutingSource(null);
+      return;
     }
+
+    if (!isValidCoord(pickupCoords) || !isValidCoord(dropoffCoords)) {
+      setRouteError(true);
+      setDistanceKm(null);
+      setDurationMin(null);
+      setRoutingSource(null);
+      return;
+    }
+
+    let cancelled = false;
+    setCalculating(true);
+    setRouteError(false);
+
+    getDrivingDistance(pickupCoords, dropoffCoords).then(result => {
+      if (cancelled) return;
+      if (result) {
+        setDistanceKm(result.distanceKm);
+        setDurationMin(result.durationMin);
+        setRoutingSource(result.source);
+      } else {
+        setRouteError(true);
+        setDistanceKm(null);
+        setDurationMin(null);
+        setRoutingSource(null);
+      }
+    }).catch(() => {
+      if (!cancelled) setRouteError(true);
+    }).finally(() => {
+      if (!cancelled) setCalculating(false);
+    });
+
+    return () => { cancelled = true; };
   }, [pickupCoords, dropoffCoords]);
 
   const fee = distanceKm !== null ? calcDeliveryFee(distanceKm, WEIGHT_KG[form.weight]) : null;
+
+  const handlePickupSelect = (s: { place_id: string; display_name: string; lat: string; lon: string }) => {
+    const lat = parseFloat(s.lat);
+    const lng = parseFloat(s.lon);
+    if (isValidCoord({ lat, lng })) {
+      setPickupCoords({ lat, lng });
+    }
+  };
+
+  const handleDropoffSelect = (s: { place_id: string; display_name: string; lat: string; lon: string }) => {
+    const lat = parseFloat(s.lat);
+    const lng = parseFloat(s.lon);
+    if (isValidCoord({ lat, lng })) {
+      setDropoffCoords({ lat, lng });
+    }
+  };
 
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,6 +111,7 @@ export function BookingFlow() {
 
   const handleReview = () => {
     if (!photo) { setPhotoError(true); return; }
+    if (!pickupCoords || !dropoffCoords) return;
     setStep(3);
   };
 
@@ -118,30 +163,59 @@ export function BookingFlow() {
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">Pickup</label>
             <AddressAutocomplete value={form.pickup} onChange={v => update("pickup", v)}
-              onSelect={s => setPickupCoords({ lat: parseFloat(s.lat), lng: parseFloat(s.lon) })}
+              onSelect={handlePickupSelect}
               placeholder="Where to collect?"
               icon={<MapPin className="w-4 h-4 text-muted-fg shrink-0" />} />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">Drop-off</label>
             <AddressAutocomplete value={form.dropoff} onChange={v => update("dropoff", v)}
-              onSelect={s => setDropoffCoords({ lat: parseFloat(s.lat), lng: parseFloat(s.lon) })}
+              onSelect={handleDropoffSelect}
               placeholder="Where is it going?"
               icon={<Navigation className="w-4 h-4 text-muted-fg shrink-0" />} />
           </div>
-          <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-light/50 text-sm min-h-[44px]">
-            <span className="text-muted-fg">Distance</span>
-            {calculating ? (
-              <span className="w-4 h-4 rounded-full border border-muted-fg border-t-transparent animate-spin" />
-            ) : distanceKm !== null ? (
-              <span className="font-semibold text-fg">
-                {distanceKm} km{durationMin ? ` · ${durationMin} min` : ""}
-              </span>
-            ) : (
-              <span className="text-muted-fg/50">Select both locations</span>
+
+          {sameLocation && (
+            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{SAME_LOCATION_WARNING}</span>
+            </div>
+          )}
+
+          {routeError && (
+            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-sm">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>Could not calculate route. Please try different locations.</span>
+            </div>
+          )}
+
+          <div className="rounded-xl bg-primary-light/50 divide-y divide-primary-light/80 text-sm">
+            <div className="flex items-center justify-between px-4 py-3 min-h-[44px]">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-fg">Distance</span>
+                {routingSource === "estimate" && (
+                  <span className="text-[10px] font-medium text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-950 px-1.5 py-0.5 rounded">Estimate</span>
+                )}
+              </div>
+              {calculating ? (
+                <span className="w-4 h-4 rounded-full border border-muted-fg border-t-transparent animate-spin" />
+              ) : distanceKm !== null ? (
+                <span className="font-semibold text-fg">
+                  {distanceKm} km{durationMin !== null ? ` · ${durationMin} min` : ""}
+                </span>
+              ) : (
+                <span className="text-muted-fg/50">Select both locations</span>
+              )}
+            </div>
+            {fee !== null && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-muted-fg">Total fee</span>
+                <span className="font-semibold text-fg">{fmtCurrency(fee)}</span>
+              </div>
             )}
           </div>
-          <button onClick={() => setStep(2)} disabled={!distanceKm}
+
+          <button onClick={() => setStep(2)} disabled={distanceKm === null || calculating}
             className="w-full py-2.5 rounded-full bg-primary text-primary-fg text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors">
             Continue
           </button>
@@ -253,13 +327,4 @@ export function BookingFlow() {
       )}
     </div>
   );
-}
-
-function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
