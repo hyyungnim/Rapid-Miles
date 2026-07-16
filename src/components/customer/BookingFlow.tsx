@@ -7,6 +7,8 @@ import { calcDeliveryFee, fmtCurrency } from "../../lib/constants";
 import { getDrivingDistance } from "../../lib/routing";
 import { reverseGeocode } from "../../lib/photon";
 import { findNearestLandmark } from "../../lib/ilorin-landmarks";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../contexts/AuthContext";
 
 const WEIGHT_KG: Record<string, number> = { light: 0.5, medium: 3, heavy: 7 };
 
@@ -37,6 +39,7 @@ export function BookingFlow() {
   const [locateError, setLocateError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const update = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -147,9 +150,39 @@ export function BookingFlow() {
     setStep(3);
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const id = `RML-${Date.now().toString(36).toUpperCase()}`;
     setTrackingId(id);
+
+    const booking = {
+      user_id: user?.id || "anonymous",
+      tracking_number: id,
+      pickup_address: form.pickup,
+      pickup_lat: pickupCoords?.lat || 0,
+      pickup_lng: pickupCoords?.lng || 0,
+      delivery_address: form.dropoff,
+      delivery_lat: dropoffCoords?.lat || 0,
+      delivery_lng: dropoffCoords?.lng || 0,
+      distance_km: distanceKm || 0,
+      duration_minutes: durationMin || 0,
+      package_name: form.description,
+      package_category: "general",
+      weight_kg: WEIGHT_KG[form.weight] || 0.5,
+      is_fragile: false,
+      quantity: 1,
+      delivery_notes: null,
+      delivery_fee: fee || 0,
+      status: "pending" as const,
+      route_geometry: null,
+    };
+
+    if (supabase) {
+      await supabase.from("bookings").insert(booking).throwOnError();
+    } else {
+      const existing = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+      localStorage.setItem("rm_bookings", JSON.stringify([...existing, { id: `${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...booking }]));
+    }
+
     setBooked(true);
   };
 

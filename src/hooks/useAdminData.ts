@@ -56,8 +56,50 @@ export function useAdminData() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) {
+    async function fetchLocal() {
+      const all = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+      const totalRevenue = all.reduce((s: number, b: any) => s + (b.delivery_fee || 0), 0);
+      const recentLocal = all.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
+
+      setStats({
+        deliveries: all.length,
+        deliveriesChange: all.length ? "+100%" : "0%",
+        customers: 1,
+        customersChange: "0",
+        drivers: 0,
+        driversChange: "0",
+        revenue: totalRevenue,
+        revenueChange: totalRevenue ? "+100%" : "0%",
+      });
+      setRecentDeliveries(recentLocal.map((b: any) => ({
+        id: b.tracking_number,
+        tracking_number: b.tracking_number,
+        customer_name: b.user_id || "You",
+        driver_name: "Unassigned",
+        status: b.status,
+        amount: b.delivery_fee || 0,
+      })));
+      setTopDrivers([]);
+      setRevenue({
+        today: totalRevenue,
+        week: totalRevenue,
+        month: totalRevenue,
+        allTime: totalRevenue,
+        monthly: Array(12).fill(0),
+      });
+      setAnalytics({
+        avgDeliveryTime: "—",
+        onTimeRate: "—",
+        avgDistance: "—",
+        repeatRate: "—",
+        avgRating: "—",
+        cancellation: "—",
+      });
       setLoading(false);
+    }
+
+    if (!supabase) {
+      fetchLocal();
       return;
     }
 

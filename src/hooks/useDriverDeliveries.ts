@@ -22,8 +22,31 @@ export function useDriverDeliveries() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !supabase) {
+    async function fetchLocal() {
+      const all: any[] = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+      const mapped: DriverDelivery[] = all.filter(b => b.driver_id === user?.id || b.status === "pending").map((b: any) => ({
+        id: b.tracking_number,
+        pickup: b.pickup_address || "",
+        dropoff: b.delivery_address || "",
+        customer: b.user_id || "Unknown",
+        customerPhone: "",
+        recipient: b.recipient_name || "",
+        recipientPhone: b.recipient_phone || "",
+        status: b.status,
+        amount: b.delivery_fee || 0,
+      }));
+      setActiveDeliveries(mapped.filter(d => !["delivered", "cancelled"].includes(d.status)));
+      setHistory(mapped.filter(d => ["delivered", "cancelled"].includes(d.status)));
       setLoading(false);
+    }
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    if (!supabase) {
+      fetchLocal();
       return;
     }
 
