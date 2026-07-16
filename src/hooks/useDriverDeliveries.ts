@@ -54,7 +54,7 @@ export function useDriverDeliveries() {
       const { data: bookings, error } = await supabase
         .from("bookings")
         .select("*")
-        .eq("driver_id", user.id)
+        .or(`driver_id.eq.${user.id},status.eq.pending`)
         .order("created_at", { ascending: false });
 
       if (error || !bookings) {

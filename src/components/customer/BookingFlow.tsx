@@ -37,6 +37,8 @@ export function BookingFlow() {
   const [trackingId, setTrackingId] = useState("");
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState<string | null>(null);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -144,18 +146,29 @@ export function BookingFlow() {
     }
   };
 
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+
   const handleReview = () => {
-    if (!photo) { setPhotoError(true); return; }
-    if (!pickupCoords || !dropoffCoords) return;
+    const errors: string[] = [];
+    if (!photo) { setPhotoError(true); errors.push("Package photo is required"); }
+    if (!form.description.trim()) errors.push("Package description is required");
+    if (!form.recipientName.trim()) errors.push("Recipient name is required");
+    if (!form.recipientPhone.trim()) errors.push("Recipient phone is required");
+    if (!pickupCoords || !dropoffCoords) errors.push("Pickup and drop-off locations are required");
+    setFormErrors(errors);
+    if (errors.length) return;
     setStep(3);
   };
 
   const handleConfirm = async () => {
     const id = `RML-${Date.now().toString(36).toUpperCase()}`;
     setTrackingId(id);
+    setConfirmError(null);
+    setConfirming(true);
 
     const booking = {
       user_id: user?.id || "anonymous",
+      driver_id: null,
       tracking_number: id,
       pickup_address: form.pickup,
       pickup_lat: pickupCoords?.lat || 0,
@@ -176,30 +189,38 @@ export function BookingFlow() {
       route_geometry: null,
     };
 
-    if (supabase) {
-      await supabase.from("bookings").insert(booking).throwOnError();
-    } else {
-      const existing = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
-      localStorage.setItem("rm_bookings", JSON.stringify([...existing, { id: `${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...booking }]));
+    try {
+      if (supabase) {
+        const { error } = await supabase.from("bookings").insert(booking);
+        if (error) throw error;
+      } else {
+        const existing = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+        localStorage.setItem("rm_bookings", JSON.stringify([...existing, { id: `${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...booking }]));
+      }
+      setBooked(true);
+    } catch (e: any) {
+      setConfirmError(e.message || "Failed to save booking");
+    } finally {
+      setConfirming(false);
     }
-
-    setBooked(true);
   };
 
   if (booked) {
     return (
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="max-w-lg text-center py-12">
-        <div className="w-16 h-16 rounded-full bg-success-light flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-success" />
-        </div>
-        <h2 className="text-2xl font-bold text-fg mb-2">Booking confirmed!</h2>
-        <p className="text-sm text-muted-fg mb-2">Your tracking ID</p>
-        <p className="text-3xl font-bold text-primary tracking-tight mb-8">{trackingId}</p>
-        <button onClick={() => navigate(0)}
-          className="px-8 py-3 rounded-full bg-primary text-primary-fg text-sm font-medium hover:bg-primary/90 transition-colors">
-          Book another
-        </button>
-      </motion.div>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="max-w-lg text-center">
+          <div className="w-16 h-16 rounded-full bg-success-light flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-success" />
+          </div>
+          <h2 className="text-2xl font-bold text-fg mb-2">Booking confirmed!</h2>
+          <p className="text-sm text-muted-fg mb-2">Your tracking ID</p>
+          <p className="text-3xl font-bold text-primary tracking-tight mb-8">{trackingId}</p>
+          <button onClick={() => navigate(0)}
+            className="px-8 py-3 rounded-full bg-primary text-primary-fg text-sm font-medium hover:bg-primary/90 transition-colors">
+            Book another
+          </button>
+        </motion.div>
+      </div>
     );
   }
 
@@ -301,8 +322,13 @@ export function BookingFlow() {
 
       {step === 2 && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 max-w-lg">
+          {formErrors.length > 0 && (
+            <div className="flex flex-col gap-1 px-4 py-3 rounded-xl bg-error-light text-error text-sm">
+              {formErrors.map((e, i) => <span key={i}>{e}</span>)}
+            </div>
+          )}
           <div>
-            <label className="text-xs font-medium text-muted-fg mb-2 block">What's inside?</label>
+            <label className="text-xs font-medium text-muted-fg mb-2 block">What's inside? <span className="text-error">*</span></label>
             <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-muted focus-within:bg-card focus-within:ring-1 focus-within:ring-primary/30 transition-all">
               <Package className="w-4 h-4 text-muted-fg shrink-0 mt-0.5" />
               <textarea value={form.description} onChange={e => update("description", e.target.value)}
@@ -350,7 +376,7 @@ export function BookingFlow() {
             {photoError && <p className="text-xs text-error mt-1">Photo is required before proceeding</p>}
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-fg mb-2 block">Recipient</label>
+            <label className="text-xs font-medium text-muted-fg mb-2 block">Recipient <span className="text-error">*</span></label>
             <div className="space-y-3">
               <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-muted focus-within:bg-card focus-within:ring-1 focus-within:ring-primary/30 transition-all">
                 <User className="w-4 h-4 text-muted-fg shrink-0" />
@@ -396,10 +422,16 @@ export function BookingFlow() {
               </div>
             )}
           </div>
-          <button onClick={handleConfirm}
-            className="w-full py-3 rounded-full bg-accent text-accent-fg font-semibold text-sm hover:bg-accent/90 transition-all flex items-center justify-center gap-2">
-            Confirm & book · {fee !== null ? fmtCurrency(fee) : ""} <ArrowRight className="w-4 h-4" />
-          </button>
+          {confirmError && (
+            <p className="text-xs text-error mb-3">{confirmError}</p>
+          )}
+          <div className="flex gap-2">
+            <button onClick={() => setStep(2)} className="px-5 py-2.5 rounded-full text-sm font-medium text-muted-fg hover:text-fg transition-colors">Back</button>
+            <button onClick={handleConfirm} disabled={confirming}
+              className="flex-1 py-3 rounded-full bg-accent text-accent-fg font-semibold text-sm hover:bg-accent/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+              {confirming ? "Saving…" : `Confirm & book · ${fee !== null ? fmtCurrency(fee) : ""}`} {!confirming && <ArrowRight className="w-4 h-4" />}
+            </button>
+          </div>
         </motion.div>
       )}
     </div>
