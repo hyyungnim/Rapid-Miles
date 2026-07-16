@@ -30,21 +30,6 @@ function saveLocalUsers(users: Profile[]) {
   localStorage.setItem("rm_users", JSON.stringify(users));
 }
 
-function getLocalSession(): { email: string; id: string } | null {
-  try {
-    const s = localStorage.getItem("rm_session");
-    return s ? JSON.parse(s) : null;
-  } catch { return null; }
-}
-
-function setLocalSession(email: string, id: string) {
-  localStorage.setItem("rm_session", JSON.stringify({ email, id }));
-}
-
-function clearLocalSession() {
-  localStorage.removeItem("rm_session");
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ user: null, loading: true, error: null });
   const pendingProfileRef = useRef<Profile | null>(null);
@@ -79,15 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return () => subscription.unsubscribe();
     }
 
-    // Local auth fallback
-    const session = getLocalSession();
-    if (session) {
-      const users = getLocalUsers();
-      const user = users.find(u => u.email === session.email && u.id === session.id);
-      setState({ user: user || null, loading: false, error: null });
-    } else {
-      setState((s) => ({ ...s, loading: false }));
-    }
+    // No local session persistence — dashboards redirect to auth on reload
+    setState((s) => ({ ...s, loading: false }));
   }, []);
 
   async function signIn(email: string, password: string) {
@@ -104,7 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         avatar_url: null,
         created_at: new Date().toISOString(),
       };
-      setLocalSession(adminProfile.email, adminProfile.id);
       setState({ user: adminProfile, loading: false, error: null });
       return;
     }
@@ -148,7 +125,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState((s) => ({ ...s, loading: false, error: err }));
       throw new Error(err);
     }
-    setLocalSession(user.email, user.id);
     setState({ user: user, loading: false, error: null });
   }
 
@@ -221,7 +197,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       created_at: new Date().toISOString(),
     };
     saveLocalUsers([...users, newUser]);
-    setLocalSession(newUser.email, newUser.id);
     setState({ user: newUser, loading: false, error: null });
   }
 
@@ -229,7 +204,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (supabase) {
       await supabase.auth.signOut();
     }
-    clearLocalSession();
     setState({ user: null, loading: false, error: null });
   }
 
