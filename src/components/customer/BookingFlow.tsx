@@ -162,14 +162,14 @@ export function BookingFlow() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 max-w-lg">
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">Pickup</label>
-            <AddressAutocomplete value={form.pickup} onChange={v => update("pickup", v)}
+            <AddressAutocomplete value={form.pickup} onChange={v => { update("pickup", v); if (!v) setPickupCoords(null); }}
               onSelect={handlePickupSelect}
               placeholder="Where to collect?"
               icon={<MapPin className="w-4 h-4 text-muted-fg shrink-0" />} />
           </div>
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">Drop-off</label>
-            <AddressAutocomplete value={form.dropoff} onChange={v => update("dropoff", v)}
+            <AddressAutocomplete value={form.dropoff} onChange={v => { update("dropoff", v); if (!v) setDropoffCoords(null); }}
               onSelect={handleDropoffSelect}
               placeholder="Where is it going?"
               icon={<Navigation className="w-4 h-4 text-muted-fg shrink-0" />} />
