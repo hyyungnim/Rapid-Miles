@@ -51,3 +51,18 @@ export function toPhotonResult(feature: PhotonFeature): PhotonResult {
     lon,
   };
 }
+
+const NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse";
+
+export async function reverseGeocode(lat: number, lng: number): Promise<{ display_name: string; lat: number; lon: number } | null> {
+  const url = `${NOMINATIM_REVERSE}?lat=${lat}&lon=${lng}&format=json&addressdetails=1`;
+  const res = await fetch(url, {
+    headers: { "User-Agent": "RapidMiles/1.0" },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (data && data.display_name) {
+    return { display_name: data.display_name, lat: parseFloat(data.lat), lon: parseFloat(data.lon) };
+  }
+  return null;
+}

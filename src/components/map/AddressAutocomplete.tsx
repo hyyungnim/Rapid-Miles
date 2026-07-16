@@ -150,7 +150,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
                 </span>
               )}
               {item.source === "photon" && (
-                <span className="text-[10px] font-medium text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950 px-1.5 py-0.5 rounded shrink-0">
+                <span className="text-[10px] font-medium text-accent bg-accent-light px-1.5 py-0.5 rounded shrink-0">
                   Place
                 </span>
               )}

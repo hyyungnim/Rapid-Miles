@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
-import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCircle, AlertTriangle } from "lucide-react";
+import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCircle, AlertTriangle, LocateFixed, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { AddressAutocomplete } from "../map/AddressAutocomplete";
 import { calcDeliveryFee, fmtCurrency } from "../../lib/constants";
 import { getDrivingDistance } from "../../lib/routing";
+import { reverseGeocode } from "../../lib/photon";
 
 const WEIGHT_KG: Record<string, number> = { light: 0.5, medium: 3, heavy: 7 };
 
@@ -31,6 +32,8 @@ export function BookingFlow() {
   const [photoError, setPhotoError] = useState(false);
   const [booked, setBooked] = useState(false);
   const [trackingId, setTrackingId] = useState("");
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -100,6 +103,33 @@ export function BookingFlow() {
     }
   };
 
+  const handleUseMyLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocateError("Geolocation is not supported by your browser");
+      return;
+    }
+    setLocating(true);
+    setLocateError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        setPickupCoords({ lat, lng });
+        const result = await reverseGeocode(lat, lng);
+        if (result) {
+          update("pickup", result.display_name);
+        } else {
+          update("pickup", `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        }
+        setLocating(false);
+      },
+      (err) => {
+        setLocateError(err.message);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  }, []);
+
   const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -166,6 +196,18 @@ export function BookingFlow() {
               onSelect={handlePickupSelect}
               placeholder="Where to collect?"
               icon={<MapPin className="w-4 h-4 text-muted-fg shrink-0" />} />
+            <button type="button" onClick={handleUseMyLocation} disabled={locating}
+              className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 disabled:opacity-50 transition-colors">
+              {locating ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <LocateFixed className="w-3.5 h-3.5" />
+              )}
+              {locating ? "Getting location…" : "Use my current location"}
+            </button>
+            {locateError && (
+              <p className="mt-1 text-xs text-error">{locateError}</p>
+            )}
           </div>
           <div>
             <label className="text-xs font-medium text-muted-fg mb-2 block">Drop-off</label>
@@ -176,7 +218,7 @@ export function BookingFlow() {
           </div>
 
           {sameLocation && (
-            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-sm">
+            <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-warning-light dark:bg-warning-light/10 text-warning text-sm">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{SAME_LOCATION_WARNING}</span>
             </div>
@@ -193,9 +235,9 @@ export function BookingFlow() {
             <div className="flex items-center justify-between px-4 py-3 min-h-[44px]">
               <div className="flex items-center gap-2">
                 <span className="text-muted-fg">Distance</span>
-                {routingSource === "estimate" && (
-                  <span className="text-[10px] font-medium text-amber-600 bg-amber-100 dark:text-amber-400 dark:bg-amber-950 px-1.5 py-0.5 rounded">Estimate</span>
-                )}
+                  {routingSource === "estimate" && (
+                    <span className="text-[10px] font-medium text-warning bg-warning-light px-1.5 py-0.5 rounded">Estimate</span>
+                  )}
               </div>
               {calculating ? (
                 <span className="w-4 h-4 rounded-full border border-muted-fg border-t-transparent animate-spin" />
