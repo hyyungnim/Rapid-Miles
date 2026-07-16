@@ -61,7 +61,7 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
   const search = useCallback(async (q: string) => {
     if (q.length < 2) { setItems([]); setOpen(false); return; }
 
-    const local: LocalItem[] = searchLandmarks(q).slice(0, 4).map((l: Landmark, i: number) => ({
+    const local: LocalItem[] = searchLandmarks(q).slice(0, 8).map((l: Landmark, i: number) => ({
       id: `lm-${i}`,
       label: l.name,
       lat: l.lat,
