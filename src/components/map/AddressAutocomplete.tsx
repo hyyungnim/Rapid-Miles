@@ -65,9 +65,9 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
     let googleItems: Suggestion[] = [];
 
     try {
-      // Primary: Google Places REST API (Nigeria-only with Ilorin bias)
+      // Primary: Google Places REST API (Nigeria-only, Ilorin-biased ~30km)
       const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-      const restUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(q)}&key=${apiKey}&types=address|establishment|geocode&components=country:ng&location=${ILORIN.center.lat},${ILORIN.center.lon}&radius=50000&bounds=${ILORIN.center.lat - 4.5},${ILORIN.center.lon - 2.5}|${ILORIN.center.lat + 5.5},${ILORIN.center.lon + 10.5}`;
+      const restUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(q)}&key=${apiKey}&types=address|establishment|geocode&components=country:ng&location=${ILORIN.center.lat},${ILORIN.center.lon}&radius=30000`;
       const restRes = await fetch(restUrl);
       const restData = await restRes.json();
 
@@ -102,10 +102,8 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
                   input: q,
                   types: ["address", "establishment", "geocode"],
                   componentRestrictions: { country: "ng" },
-                  bounds: new gm.LatLngBounds(
-                    new gm.LatLng(4, 2),
-                    new gm.LatLng(14, 15)
-                  ),
+                  locationBias: { lat: 8.4966, lng: 4.5426 } as any,
+                  radius: 30000,
                 },
                 (results, status) => {
                   if (status === gm.places.PlacesServiceStatus.OK && results) {
