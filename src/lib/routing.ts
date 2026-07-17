@@ -1,10 +1,12 @@
+import { loadGoogleMaps, hasGoogleMaps } from "./google-maps";
+
 const OSRM_TIMEOUT = 10_000;
 const NIGERIA_BOX = { minLat: 4, maxLat: 14, minLng: 2, maxLng: 15 };
 
 export interface RouteResult {
   distanceKm: number;
   durationMin: number;
-  source: "osrm" | "estimate";
+  source: "google" | "osrm" | "estimate";
 }
 
 function isValidCoord(c: { lat: number; lng: number }): boolean {
@@ -46,6 +48,39 @@ export async function getDrivingDistance(
     return { distanceKm: 0, durationMin: 0, source: "estimate" };
   }
 
+  // Try Google Directions first
+  if (hasGoogleMaps()) {
+    try {
+      const gm = await loadGoogleMaps();
+      if (gm) {
+        const directions = new gm.DirectionsService();
+        const result = await new Promise<google.maps.DirectionsResult | null>((resolve) => {
+          directions.route(
+            {
+              origin: new gm.LatLng(origin.lat, origin.lng),
+              destination: new gm.LatLng(dest.lat, dest.lng),
+              travelMode: gm.TravelMode.DRIVING,
+            },
+            (res, status) => {
+              resolve(status === gm.DirectionsStatus.OK ? res : null);
+            }
+          );
+        });
+        if (result?.routes?.[0]?.legs?.[0]) {
+          const leg = result.routes[0].legs[0];
+          return {
+            distanceKm: +(leg.distance!.value / 1000).toFixed(1),
+            durationMin: Math.ceil(leg.duration!.value / 60),
+            source: "google",
+          };
+        }
+      }
+    } catch {
+      // Fall through to OSRM
+    }
+  }
+
+  // Fallback: OSRM
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), OSRM_TIMEOUT);
 

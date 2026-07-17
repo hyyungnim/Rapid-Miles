@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { loadGoogleMaps, hasGoogleMaps } from "../../lib/google-maps";
 import { searchLandmarks, type Landmark } from "../../lib/ilorin-landmarks";
-import { ILORIN, toPhotonResult, type PhotonFeature, type PhotonResult } from "../../lib/photon";
 
 interface Props {
   value: string;
@@ -10,24 +10,21 @@ interface Props {
   icon?: React.ReactNode;
 }
 
-interface LocalItem {
+interface Suggestion {
   id: string;
   label: string;
   lat: number;
   lon: number;
-  source: "landmark" | "photon";
+  source: "landmark" | "google";
 }
 
-const CACHE_TTL = 60_000;
-
 export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "Enter address", icon }: Props) {
-  const [items, setItems] = useState<LocalItem[]>([]);
+  const [items, setItems] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [fetching, setFetching] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const cacheRef = useRef(new Map<string, { data: LocalItem[]; expiry: number }>());
+  const autocompleteRef = useRef<google.maps.places.AutocompleteService | null>(null);
 
   useEffect(() => {
     const click = (e: MouseEvent) => {
@@ -37,31 +34,10 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
     return () => document.removeEventListener("mousedown", click);
   }, []);
 
-  const fetchPhoton = useCallback(async (q: string): Promise<LocalItem[]> => {
-    const params = new URLSearchParams({
-      q,
-      limit: "6",
-      bbox: ILORIN.bbox.join(","),
-      lat: String(ILORIN.center.lat),
-      lon: String(ILORIN.center.lon),
-    });
-
-    const res = await fetch(`https://photon.komoot.io/api/?${params}`, {
-      signal: abortRef.current?.signal,
-    });
-    if (!res.ok) throw new Error("Photon API error");
-
-    const body: { features: PhotonFeature[] } = await res.json();
-    return (body.features || []).map((f) => {
-      const r = toPhotonResult(f);
-      return { id: r.place_id, label: r.display_name, lat: r.lat, lon: r.lon, source: "photon" as const };
-    });
-  }, []);
-
   const search = useCallback(async (q: string) => {
     if (q.length < 2) { setItems([]); setOpen(false); return; }
 
-    const local: LocalItem[] = searchLandmarks(q).slice(0, 8).map((l: Landmark, i: number) => ({
+    const local: Suggestion[] = searchLandmarks(q).slice(0, 6).map((l: Landmark, i: number) => ({
       id: `lm-${i}`,
       label: l.name,
       lat: l.lat,
@@ -72,40 +48,94 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
     setItems(local);
     setOpen(local.length > 0);
 
-    const cached = cacheRef.current.get(q);
-    if (cached && Date.now() < cached.expiry) {
-      setItems(cached.data);
-      setOpen(cached.data.length > 0);
-      return;
-    }
+    if (!hasGoogleMaps()) return;
 
     setFetching(true);
     try {
-      const photon = await fetchPhoton(q);
+      const gm = await loadGoogleMaps();
+      if (!gm) return;
+
+      if (!autocompleteRef.current) {
+        autocompleteRef.current = new gm.places.AutocompleteService();
+      }
+
+      const predictions = await new Promise<google.maps.places.AutocompletePrediction[]>((resolve, reject) => {
+        autocompleteRef.current!.getPlacePredictions(
+          {
+            input: q,
+            types: ["address", "establishment", "geocode"],
+            componentRestrictions: { country: "ng" },
+            locationBias: { lat: 8.4966, lng: 4.5426 } as any,
+            radius: 50000,
+          },
+          (results, status) => {
+            if (status === gm.places.PlacesServiceStatus.OK && results) {
+              resolve(results);
+            } else {
+              resolve([]);
+            }
+          }
+        );
+      });
+
+      const googleItems: Suggestion[] = predictions.slice(0, 6).map((p) => ({
+        id: p.place_id,
+        label: p.description,
+        lat: 0,
+        lon: 0,
+        source: "google" as const,
+      }));
+
       const seen = new Set(local.map((l) => l.label.toLowerCase()));
-      const merged = [...local, ...photon.filter((p) => !seen.has(p.label.toLowerCase()))];
-      cacheRef.current.set(q, { data: merged, expiry: Date.now() + CACHE_TTL });
+      const merged = [...local, ...googleItems.filter((g) => !seen.has(g.label.toLowerCase()))];
       setItems(merged);
       setOpen(merged.length > 0);
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      if (local.length === 0) setItems(local);
+      console.warn("Google Places autocomplete failed:", err);
+      if (local.length === 0) setItems([]);
     } finally {
       setFetching(false);
     }
-  }, [fetchPhoton]);
+  }, []);
 
   const handleChange = (val: string) => {
     onChange(val);
-    abortRef.current?.abort();
     clearTimeout(timerRef.current);
-    abortRef.current = new AbortController();
     timerRef.current = setTimeout(() => search(val), 300);
   };
 
-  const handleSelect = (item: LocalItem) => {
+  const resolveGoogleLatLng = useCallback(async (placeId: string): Promise<{ lat: number; lng: number } | null> => {
+    try {
+      const gm = await loadGoogleMaps();
+      if (!gm) return null;
+      const geocoder = new gm.Geocoder();
+      const result = await new Promise<google.maps.GeocoderResult | null>((resolve) => {
+        geocoder.geocode({ placeId }, (results, status) => {
+          resolve(status === gm.GeocoderStatus.OK && results?.length ? results[0] : null);
+        });
+      });
+      if (result && result.geometry?.location) {
+        const loc = result.geometry.location;
+        return { lat: loc.lat(), lng: loc.lng() };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const handleSelect = async (item: Suggestion) => {
     onChange(item.label);
     setOpen(false);
+
+    if (item.source === "google" && item.lat === 0) {
+      const coords = await resolveGoogleLatLng(item.id);
+      if (coords) {
+        item.lat = coords.lat;
+        item.lon = coords.lng;
+      }
+    }
+
     onSelect?.({
       place_id: item.id,
       display_name: item.label,
@@ -144,16 +174,9 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
               onClick={() => handleSelect(item)}
               className="w-full text-left px-4 py-2.5 text-sm text-fg hover:bg-primary-light hover:text-primary border-b border-border last:border-0 transition-colors flex items-center gap-2"
             >
-              {item.source === "landmark" && (
-                <span className="text-[10px] font-medium text-accent bg-accent-light px-1.5 py-0.5 rounded shrink-0">
-                  Landmark
-                </span>
-              )}
-              {item.source === "photon" && (
-                <span className="text-[10px] font-medium text-accent bg-accent-light px-1.5 py-0.5 rounded shrink-0">
-                  Place
-                </span>
-              )}
+              <span className="text-[10px] font-medium text-accent bg-accent-light px-1.5 py-0.5 rounded shrink-0">
+                {item.source === "landmark" ? "Landmark" : "Place"}
+              </span>
               <span className="truncate">{item.label}</span>
             </button>
           ))}
