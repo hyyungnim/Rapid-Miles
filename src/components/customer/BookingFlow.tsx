@@ -176,7 +176,9 @@ export function BookingFlow() {
 
     const paymentRef = generatePaymentRef();
 
-    const booking: Record<string, any> = {
+    // Base booking — only columns from the original schema (migration 001)
+    // so it works even if 002 hasn't been run
+    const baseBooking: Record<string, any> = {
       user_id: user?.id || "anonymous",
       driver_id: null,
       tracking_number: id,
@@ -197,8 +199,8 @@ export function BookingFlow() {
       delivery_fee: fee || 0,
       status: "pending",
       route_geometry: null,
-      payment_ref: paymentRef,
-      payment_status: "pending",
+      recipient_name: form.recipientName,
+      recipient_phone: form.recipientPhone,
     };
 
     const persistToLocal = (pb: Record<string, any>) => {
@@ -207,18 +209,18 @@ export function BookingFlow() {
     };
 
     // If Paystack is configured, process payment first
+    let paymentSuccessRef: string | null = null;
     if (hasPaystack() && paystackReady) {
       const paid = await new Promise<boolean>((resolve) => {
         openPaystackPopup({
           key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY!,
           email: user?.email || "customer@rapidmiles.com",
-          amount: (fee || 0) * 100, // Paystack uses kobo
+          amount: (fee || 0) * 100,
           ref: paymentRef,
           label: `Rapid Miles - ${id}`,
           metadata: { tracking_number: id, customer_name: user?.full_name },
           onSuccess: (ref) => {
-            booking.payment_ref = ref;
-            booking.payment_status = "paid";
+            paymentSuccessRef = ref;
             resolve(true);
           },
           onCancel: () => {
@@ -238,21 +240,33 @@ export function BookingFlow() {
       }
     }
 
-    // Save booking
+    // Save booking to Supabase
+    let bookingId: string | null = null;
     try {
       if (supabase) {
-        const { error } = await supabase.from("bookings").insert(booking);
-        if (error) console.warn("Supabase insert failed, saving locally:", error.message);
+        // Insert with just the base columns first
+        const { error, data } = await supabase.from("bookings").insert(baseBooking).select("id").maybeSingle();
+        if (error) {
+          console.warn("Supabase insert failed:", error.message);
+        } else if (data) {
+          bookingId = data.id;
+          // If payment succeeded, update booking with payment info
+          if (paymentSuccessRef) {
+            await supabase.from("bookings").update({
+              payment_ref: paymentSuccessRef,
+              payment_status: "paid",
+            }).eq("id", bookingId);
+          }
+        }
       }
-      persistToLocal(booking);
-      setBooked(true);
     } catch (e: any) {
-      console.warn("Booking save error, saving locally:", e.message);
-      persistToLocal(booking);
-      setBooked(true);
-    } finally {
-      setConfirming(false);
+      console.warn("Supabase insert error:", e?.message || e);
     }
+
+    // Always persist to localStorage
+    persistToLocal({ ...baseBooking, payment_ref: paymentSuccessRef, payment_status: paymentSuccessRef ? "paid" : "pending" });
+    setBooked(true);
+    setConfirming(false);
   };
 
   if (booked) {

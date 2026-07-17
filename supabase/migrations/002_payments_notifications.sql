@@ -8,6 +8,11 @@ ALTER TABLE public.bookings
     CHECK (payment_status IN ('pending','paid','failed','refunded')),
   ADD COLUMN IF NOT EXISTS payment_ref     TEXT;
 
+-- ─── Recipient info on bookings (collected in form, was missing) ──
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS recipient_name  TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS recipient_phone TEXT NOT NULL DEFAULT '';
+
 -- ─── Notifications table ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.notifications (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
