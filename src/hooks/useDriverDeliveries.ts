@@ -118,6 +118,16 @@ export function useDriverDeliveries() {
           return true;
         });
 
+        // Backfill Supabase bookings into localStorage
+        if (supBookings && supBookings.length > 0) {
+          const existingLocal = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+          const localKeys = new Set(existingLocal.map((b: any) => b.tracking_number));
+          const missing = supBookings.filter((b: any) => !localKeys.has(b.tracking_number || b.id));
+          if (missing.length > 0) {
+            localStorage.setItem("rm_bookings", JSON.stringify([...existingLocal, ...missing]));
+          }
+        }
+
         setActiveDeliveries(deduped.filter(d => !["delivered", "cancelled"].includes(d.status)));
         setHistory(deduped.filter(d => ["delivered", "cancelled"].includes(d.status)));
         setAllBookings(deduped);

@@ -174,6 +174,16 @@ export function useAdminData() {
           });
           setAllBookings(mergedAll.sort((a, b) => b.created_at.localeCompare(a.created_at)));
 
+          // Backfill: mirror Supabase bookings into localStorage so fallback works on reload
+          if (allBookingsFull && allBookingsFull.length > 0) {
+            const existingLocal = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+            const localKeys = new Set(existingLocal.map((b: any) => b.tracking_number));
+            const missing = (allBookingsFull as any[]).filter(b => !localKeys.has(b.tracking_number || b.id));
+            if (missing.length > 0) {
+              localStorage.setItem("rm_bookings", JSON.stringify([...existingLocal, ...missing]));
+            }
+          }
+
           setTopDrivers((driversData || []).map((d: any) => ({
             id: d.id, name: d.full_name,
             deliveries: d.total_deliveries || 0,
