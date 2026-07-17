@@ -1,13 +1,21 @@
 import { useEffect, useRef } from "react";
 import { loadGoogleMaps, hasGoogleMaps } from "../../lib/google-maps";
 
+interface DriverMarker {
+  lat: number;
+  lng: number;
+  label?: string;
+  heading?: number | null;
+}
+
 interface Props {
   pickupLat?: number; pickupLng?: number;
   dropLat?: number; dropLng?: number;
+  driver?: DriverMarker;
   height?: string;
 }
 
-export function MapView({ pickupLat, pickupLng, dropLat, dropLng, height = "300px" }: Props) {
+export function MapView({ pickupLat, pickupLng, dropLat, dropLng, driver, height = "300px" }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
 
@@ -60,22 +68,61 @@ export function MapView({ pickupLat, pickupLng, dropLat, dropLng, height = "300p
         markers.push(m);
       }
 
+      // Driver marker with heading
+      if (driver?.lat && driver?.lng) {
+        const icon = driver.heading != null
+          ? {
+              path: gm.SymbolPath.FORWARD_CLOSED_ARROW,
+              scale: 5,
+              fillColor: "#2563eb",
+              fillOpacity: 1,
+              strokeWeight: 1,
+              strokeColor: "#fff",
+              rotation: driver.heading,
+            }
+          : {
+              path: gm.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: "#2563eb",
+              fillOpacity: 1,
+              strokeWeight: 2,
+              strokeColor: "#fff",
+            };
+        const m = new gm.Marker({
+          position: { lat: driver.lat, lng: driver.lng },
+          map,
+          title: driver.label || "Rider",
+          icon,
+          zIndex: 10,
+        });
+        markers.push(m);
+      }
+
       (map as any).__markers = markers;
 
-      if (pickupLat && pickupLng && dropLat && dropLng) {
+      // Fit bounds to include all markers
+      const allCoords = [
+        pickupLat && pickupLng ? { lat: pickupLat, lng: pickupLng } : null,
+        dropLat && dropLng ? { lat: dropLat, lng: dropLng } : null,
+        driver?.lat && driver?.lng ? { lat: driver.lat, lng: driver.lng } : null,
+      ].filter(Boolean) as { lat: number; lng: number }[];
+
+      if (allCoords.length >= 2) {
+        const lats = allCoords.map(c => c.lat);
+        const lngs = allCoords.map(c => c.lng);
         const bounds = new gm.LatLngBounds(
-          { lat: Math.min(pickupLat, dropLat), lng: Math.min(pickupLng, dropLng) },
-          { lat: Math.max(pickupLat, dropLat), lng: Math.max(pickupLng, dropLng) }
+          { lat: Math.min(...lats), lng: Math.min(...lngs) },
+          { lat: Math.max(...lats), lng: Math.max(...lngs) }
         );
-        map.fitBounds(bounds, 60);
-      } else if (pickupLat && pickupLng) {
-        map.setCenter({ lat: pickupLat, lng: pickupLng });
+        map.fitBounds(bounds, 80);
+      } else if (allCoords.length === 1) {
+        map.setCenter(allCoords[0]);
         map.setZoom(14);
       }
     });
 
     return () => { cancelled = true; };
-  }, [pickupLat, pickupLng, dropLat, dropLng]);
+  }, [pickupLat, pickupLng, dropLat, dropLng, driver?.lat, driver?.lng, driver?.heading]);
 
   if (!hasGoogleMaps()) {
     return (

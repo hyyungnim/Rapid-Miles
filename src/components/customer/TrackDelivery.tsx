@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Search, Truck, MapPin, Navigation, Camera } from "lucide-react";
+import { Search, Truck, MapPin, Navigation, Camera, Circle } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { MapView } from "../map/MapView";
+import { useRealtimeTracking } from "../../hooks/useRealtimeTracking";
 
 const PROGRESS: Record<string, number> = {
   pending: 0, accepted: 1, rider_assigned: 1, picked_up: 2, in_transit: 2, delivered: 3,
@@ -14,6 +15,10 @@ export function TrackDelivery() {
   const [delivery, setDelivery] = useState<any | null>(null);
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
+
+  const { driverLoc, driverOnline } = useRealtimeTracking(
+    delivery?.status !== "delivered" && delivery?.status !== "cancelled" ? delivery?.id : null
+  );
 
   const handleSearch = async () => {
     if (!id.trim()) return;
@@ -33,7 +38,7 @@ export function TrackDelivery() {
         const { data: driver } = await supabase.from("drivers").select("full_name").eq("id", data.driver_id).maybeSingle();
         riderName = driver?.full_name || "";
       }
-      setDelivery({ ...data, rider_name: riderName });
+      setDelivery({ ...data, rider_name: riderName, id: data.id });
     } else {
       setNotFound(true);
     }
@@ -112,12 +117,18 @@ export function TrackDelivery() {
           {delivery.driver_id && (
             <div className="rounded-xl bg-muted p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-[#0f172a] flex items-center justify-center text-sm font-bold text-white">
+                <div className="w-9 h-9 rounded-full bg-[#0f172a] flex items-center justify-center text-sm font-bold text-white relative">
                   {(delivery.rider_name || "R")[0]}
+                  {driverOnline && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5">
+                      <span className="absolute inset-0 rounded-full bg-success animate-ping opacity-75" />
+                      <span className="absolute inset-0 rounded-full bg-success" />
+                    </span>
+                  )}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-fg">{delivery.rider_name || "Rider"}</p>
-                  <p className="text-xs text-muted-fg">Your rider</p>
+                  <p className="text-sm font-semibold text-fg">{driverLoc?.driver_name || delivery.rider_name || "Rider"}</p>
+                  <p className="text-xs text-muted-fg">{driverOnline ? "Live now" : "Assigned"}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -128,7 +139,9 @@ export function TrackDelivery() {
 
           {delivery.pickup_lat && delivery.delivery_lat && (
             <MapView pickupLat={delivery.pickup_lat} pickupLng={delivery.pickup_lng}
-              dropLat={delivery.delivery_lat} dropLng={delivery.delivery_lng} height="220px" />
+              dropLat={delivery.delivery_lat} dropLng={delivery.delivery_lng}
+              driver={driverLoc ? { lat: driverLoc.lat, lng: driverLoc.lng, label: driverLoc.driver_name, heading: driverLoc.heading } : undefined}
+              height="260px" />
           )}
         </div>
       )}

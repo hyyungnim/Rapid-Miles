@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useNavigate } from "react-router";
-import { Plus, Navigation, Clock, MapPin, Truck, User, LogOut } from "lucide-react";
+import { Plus, Navigation, Clock, MapPin, Truck, User, LogOut, Bell } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { BookingFlow } from "../components/customer/BookingFlow";
 import { TrackDelivery } from "../components/customer/TrackDelivery";
 import { DeliveryHistory } from "../components/customer/DeliveryHistory";
 import { SavedAddresses } from "../components/customer/SavedAddresses";
+import { useNotifications } from "../hooks/useNotifications";
 
 type Tab = "book" | "track" | "history" | "addresses" | "profile";
 
@@ -29,6 +30,17 @@ export function CustomerDashboard() {
   const [tab, setTab] = useState<Tab>("book");
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { unread, notifications, markRead, markAllRead } = useNotifications();
+  const [showNotifs, setShowNotifs] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const click = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setShowNotifs(false);
+    };
+    document.addEventListener("mousedown", click);
+    return () => document.removeEventListener("mousedown", click);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -56,6 +68,37 @@ export function CustomerDashboard() {
             </nav>
           </div>
           <div className="flex items-center gap-2">
+            <div ref={notifRef} className="relative">
+              <button onClick={() => setShowNotifs(!showNotifs)}
+                className="relative p-2 rounded-full hover:bg-muted transition-colors">
+                <Bell className="w-4 h-4 text-muted-fg" />
+                {unread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-error text-[9px] font-bold text-white flex items-center justify-center">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </button>
+              {showNotifs && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+                    <span className="text-xs font-semibold text-fg">Notifications</span>
+                    {unread > 0 && (
+                      <button onClick={markAllRead} className="text-[11px] text-primary hover:text-primary/80">Mark all read</button>
+                    )}
+                  </div>
+                  {notifications.length === 0 && (
+                    <p className="text-xs text-muted-fg text-center py-8">No notifications</p>
+                  )}
+                  {notifications.map(n => (
+                    <button key={n.id} onClick={() => { if (!n.read) markRead(n.id); }}
+                      className={`w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-muted transition-colors ${!n.read ? "bg-primary-light/20" : ""}`}>
+                      <p className="text-xs font-semibold text-fg">{n.title}</p>
+                      <p className="text-[11px] text-muted-fg mt-0.5">{n.body}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button onClick={() => navigate("/customer/profile")}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-muted transition-colors">
               <span className="text-sm text-muted-fg hidden sm:block">{user?.full_name || "User"}</span>

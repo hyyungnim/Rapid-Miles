@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "motion/react";
-import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCircle, AlertTriangle, LocateFixed, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Package, User, Phone, ArrowRight, Camera, CheckCircle, AlertTriangle, LocateFixed, Loader2, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router";
 import { AddressAutocomplete } from "../map/AddressAutocomplete";
 import { calcDeliveryFee, fmtCurrency } from "../../lib/constants";
@@ -9,6 +9,7 @@ import { reverseGeocode } from "../../lib/photon";
 import { findNearestLandmark } from "../../lib/ilorin-landmarks";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { loadPaystackScript, openPaystackPopup, generatePaymentRef, hasPaystack } from "../../lib/paystack";
 
 const WEIGHT_KG: Record<string, number> = { light: 0.5, medium: 3, heavy: 7 };
 
@@ -39,9 +40,16 @@ export function BookingFlow() {
   const [locateError, setLocateError] = useState<string | null>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [paystackReady, setPaystackReady] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (hasPaystack()) {
+      loadPaystackScript().then(() => setPaystackReady(true)).catch(() => {});
+    }
+  }, []);
 
   const update = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -166,7 +174,9 @@ export function BookingFlow() {
     setConfirmError(null);
     setConfirming(true);
 
-    const booking = {
+    const paymentRef = generatePaymentRef();
+
+    const booking: Record<string, any> = {
       user_id: user?.id || "anonymous",
       driver_id: null,
       tracking_number: id,
@@ -185,25 +195,60 @@ export function BookingFlow() {
       quantity: 1,
       delivery_notes: null,
       delivery_fee: fee || 0,
-      status: "pending" as const,
+      status: "pending",
       route_geometry: null,
+      payment_ref: paymentRef,
+      payment_status: "pending",
     };
 
-    const persistToLocal = () => {
+    const persistToLocal = (pb: Record<string, any>) => {
       const existing = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
-      localStorage.setItem("rm_bookings", JSON.stringify([...existing, { id: `${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...booking }]));
+      localStorage.setItem("rm_bookings", JSON.stringify([...existing, { id: `${Date.now()}`, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...pb }]));
     };
 
+    // If Paystack is configured, process payment first
+    if (hasPaystack() && paystackReady) {
+      const paid = await new Promise<boolean>((resolve) => {
+        openPaystackPopup({
+          key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY!,
+          email: user?.email || "customer@rapidmiles.com",
+          amount: (fee || 0) * 100, // Paystack uses kobo
+          ref: paymentRef,
+          label: `Rapid Miles - ${id}`,
+          metadata: { tracking_number: id, customer_name: user?.full_name },
+          onSuccess: (ref) => {
+            booking.payment_ref = ref;
+            booking.payment_status = "paid";
+            resolve(true);
+          },
+          onCancel: () => {
+            setConfirmError("Payment was cancelled. Your booking has not been saved.");
+            resolve(false);
+          },
+          onError: (msg) => {
+            setConfirmError(`Payment failed: ${msg}. Booking not saved.`);
+            resolve(false);
+          },
+        });
+      });
+
+      if (!paid) {
+        setConfirming(false);
+        return;
+      }
+    }
+
+    // Save booking
     try {
       if (supabase) {
         const { error } = await supabase.from("bookings").insert(booking);
         if (error) console.warn("Supabase insert failed, saving locally:", error.message);
       }
-      persistToLocal();
+      persistToLocal(booking);
       setBooked(true);
     } catch (e: any) {
       console.warn("Booking save error, saving locally:", e.message);
-      persistToLocal();
+      persistToLocal(booking);
       setBooked(true);
     } finally {
       setConfirming(false);
@@ -434,7 +479,12 @@ export function BookingFlow() {
             <button onClick={() => setStep(2)} className="px-5 py-2.5 rounded-full text-sm font-medium text-muted-fg hover:text-fg transition-colors">Back</button>
             <button onClick={handleConfirm} disabled={confirming}
               className="flex-1 py-3 rounded-full bg-accent text-accent-fg font-semibold text-sm hover:bg-accent/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
-              {confirming ? "Saving…" : `Confirm & book · ${fee !== null ? fmtCurrency(fee) : ""}`} {!confirming && <ArrowRight className="w-4 h-4" />}
+              {confirming ? (
+                "Processing…"
+              ) : (
+                <>{hasPaystack() && paystackReady ? <CreditCard className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
+                  {hasPaystack() && paystackReady ? "Pay & book" : "Confirm & book"} · {fee !== null ? fmtCurrency(fee) : ""}</>
+              )}
             </button>
           </div>
         </motion.div>

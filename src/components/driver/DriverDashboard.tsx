@@ -3,10 +3,13 @@ import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import {
   Navigation, Clock, Package, ChevronDown, Phone,
-  CheckCircle, XCircle, Truck, LogOut, List, RefreshCw
+  CheckCircle, XCircle, Truck, LogOut, List, RefreshCw,
+  MapPin, LocateFixed, Loader2, Circle
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useDriverDeliveries } from "../../hooks/useDriverDeliveries";
+import { useDriverLocation } from "../../hooks/useDriverLocation";
+import { MapView } from "../map/MapView";
 
 type Tab = "active" | "history" | "bookings";
 
@@ -30,12 +33,22 @@ function formatCurrency(n: number) {
   return "₦" + n.toLocaleString();
 }
 
+const STATUS_ACTIONS: Record<string, { next: string; label: string; color: string }> = {
+  pending: { next: "accepted", label: "Accept", color: "bg-success text-white hover:bg-success/90" },
+  accepted: { next: "picked_up", label: "Mark picked up", color: "bg-accent text-accent-fg hover:bg-accent/90" },
+  picked_up: { next: "in_transit", label: "Start delivery", color: "bg-accent text-accent-fg hover:bg-accent/90" },
+  in_transit: { next: "delivered", label: "Mark delivered", color: "bg-success text-white hover:bg-success/90" },
+};
+
 export function DriverDashboard() {
   const [tab, setTab] = useState<Tab>("active");
   const [expanded, setExpanded] = useState<string | null>(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { activeDeliveries, history, allBookings, loading, updateBookingStatus, refresh } = useDriverDeliveries();
+
+  const activeJob = activeDeliveries.find(d => d.status !== "cancelled" && d.status !== "delivered");
+  const { sharing: gpsSharing, error: gpsError } = useDriverLocation(activeJob?.id || null, !!activeJob);
 
   const handleSignOut = async () => {
     await signOut();
@@ -66,8 +79,17 @@ export function DriverDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-success" />
-              <span className="text-xs text-muted-fg hidden sm:inline">Online</span>
+              {gpsSharing ? (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+                  <span className="text-xs text-muted-fg hidden sm:inline">Sharing</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-border" />
+                  <span className="text-xs text-muted-fg hidden sm:inline">Offline</span>
+                </>
+              )}
             </div>
             <button onClick={refresh} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted-fg hover:text-fg hover:bg-muted transition-colors">
               <RefreshCw className="w-4 h-4" />
@@ -102,79 +124,99 @@ export function DriverDashboard() {
             <div className="w-5 h-5 rounded-full border border-muted-fg border-t-transparent animate-spin" />
           </div>
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div key={tab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg space-y-2">
-              {deliveries.length === 0 && (
-                <p className="text-sm text-muted-fg text-center py-12">
-                  {tab === "active" ? "No active deliveries" : tab === "history" ? "No delivery history" : "No bookings available"}
-                </p>
-              )}
-              {deliveries.map(d => (
-                <div key={d.id} className="rounded-xl bg-muted overflow-hidden transition-colors hover:bg-card">
-                  <button onClick={() => setExpanded(expanded === d.id ? null : d.id)}
-                    className="w-full p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center">
-                        <Package className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-semibold text-fg">{d.id}</p>
-                        <p className="text-xs text-muted-fg">{d.dropoff}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
-                      <ChevronDown className={`w-4 h-4 text-muted-fg transition-transform ${expanded === d.id ? "rotate-180" : ""}`} />
-                    </div>
-                  </button>
-                  <AnimatePresence>
-                    {expanded === d.id && (
-                      <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
-                        <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><p className="text-xs text-muted-fg">Pickup</p><p className="text-fg">{d.pickup}</p></div>
-                            <div><p className="text-xs text-muted-fg">Drop-off</p><p className="text-fg">{d.dropoff}</p></div>
-                            <div><p className="text-xs text-muted-fg">Sender</p><p className="text-fg">{d.customer}</p></div>
-                            <div><p className="text-xs text-muted-fg">Receiver</p><p className="text-fg">{d.recipient}</p></div>
-                            <div><p className="text-xs text-muted-fg">Fee</p><p className="text-fg">{formatCurrency(d.amount)}</p></div>
-                          </div>
+          <>
+            {/* Active job summary card (always visible when there's an active job) */}
+            {activeJob && tab === "active" && activeJob.pickup && (
+              <div className="mb-6">
+                <MapView
+                  pickupLat={activeJob.pickup_lat} pickupLng={activeJob.pickup_lng}
+                  dropLat={activeJob.dropoff_lat} dropLng={activeJob.dropoff_lng}
+                  height="180px" />
+                {gpsError && (
+                  <div className="flex items-center gap-2 px-3 py-2 mt-2 rounded-lg bg-error-light text-error text-xs">
+                    <MapPin className="w-3 h-3 shrink-0" />
+                    <span>{gpsError}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {d.customerPhone && (
-                              <a href={`tel:${d.customerPhone}`} className="px-3 py-1.5 rounded-full bg-[#0f172a] text-white text-xs font-medium hover:bg-[#1e293b] transition-colors flex items-center gap-1.5">
-                                <Phone className="w-3 h-3" /> Call sender
-                              </a>
-                            )}
-                            {d.recipientPhone && (
-                              <a href={`tel:${d.recipientPhone}`} className="px-3 py-1.5 rounded-full border border-border text-fg text-xs font-medium hover:bg-muted transition-colors flex items-center gap-1.5">
-                                <Phone className="w-3 h-3" /> Call receiver
-                              </a>
-                            )}
-                            {d.status === "pending" && (
-                              <>
-                                <button onClick={() => updateBookingStatus(d.id, "accepted")} className="px-3 py-1.5 rounded-full bg-success text-white text-xs font-medium hover:bg-success/90 transition-colors flex items-center gap-1.5">
-                                  <CheckCircle className="w-3 h-3" /> Accept
-                                </button>
-                                <button onClick={() => updateBookingStatus(d.id, "cancelled")} className="px-3 py-1.5 rounded-full border border-border text-muted-fg text-xs font-medium hover:text-fg transition-colors flex items-center gap-1.5">
-                                  <XCircle className="w-3 h-3" /> Decline
-                                </button>
-                              </>
-                            )}
-                            {d.status === "accepted" && (
-                              <button className="px-4 py-1.5 rounded-full bg-accent text-accent-fg text-xs font-medium hover:bg-accent/90 transition-colors">Mark picked up</button>
-                            )}
-                            {d.status === "in_transit" && (
-                              <button className="px-4 py-1.5 rounded-full bg-success text-white text-xs font-medium hover:bg-success/90 transition-colors">Mark delivered</button>
-                            )}
-                          </div>
+            <AnimatePresence mode="wait">
+              <motion.div key={tab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="max-w-lg space-y-2">
+                {deliveries.length === 0 && (
+                  <p className="text-sm text-muted-fg text-center py-12">
+                    {tab === "active" ? "No active deliveries" : tab === "history" ? "No delivery history" : "No bookings available"}
+                  </p>
+                )}
+                {deliveries.map(d => (
+                  <div key={d.id} className="rounded-xl bg-muted overflow-hidden transition-colors hover:bg-card">
+                    <button onClick={() => setExpanded(expanded === d.id ? null : d.id)}
+                      className="w-full p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary-light flex items-center justify-center">
+                          <Package className="w-4 h-4 text-primary" />
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
+                        <div className="text-left">
+                          <p className="text-sm font-semibold text-fg">{d.id}</p>
+                          <p className="text-xs text-muted-fg">{d.dropoff}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[d.status]}`}>{d.status.replace("_", " ")}</span>
+                        <ChevronDown className={`w-4 h-4 text-muted-fg transition-transform ${expanded === d.id ? "rotate-180" : ""}`} />
+                      </div>
+                    </button>
+                    <AnimatePresence>
+                      {expanded === d.id && (
+                        <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} className="overflow-hidden">
+                          <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div><p className="text-xs text-muted-fg">Pickup</p><p className="text-fg">{d.pickup}</p></div>
+                              <div><p className="text-xs text-muted-fg">Drop-off</p><p className="text-fg">{d.dropoff}</p></div>
+                              <div><p className="text-xs text-muted-fg">Sender</p><p className="text-fg">{d.customer}</p></div>
+                              <div><p className="text-xs text-muted-fg">Receiver</p><p className="text-fg">{d.recipient}</p></div>
+                              <div><p className="text-xs text-muted-fg">Fee</p><p className="text-fg">{formatCurrency(d.amount)}</p></div>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {d.customerPhone && (
+                                <a href={`tel:${d.customerPhone}`} className="px-3 py-1.5 rounded-full bg-[#0f172a] text-white text-xs font-medium hover:bg-[#1e293b] transition-colors flex items-center gap-1.5">
+                                  <Phone className="w-3 h-3" /> Call sender
+                                </a>
+                              )}
+                              {d.recipientPhone && (
+                                <a href={`tel:${d.recipientPhone}`} className="px-3 py-1.5 rounded-full border border-border text-fg text-xs font-medium hover:bg-muted transition-colors flex items-center gap-1.5">
+                                  <Phone className="w-3 h-3" /> Call receiver
+                                </a>
+                              )}
+
+                              {d.status === "pending" && (
+                                <>
+                                  <button onClick={() => updateBookingStatus(d.id, "accepted")} className="px-3 py-1.5 rounded-full bg-success text-white text-xs font-medium hover:bg-success/90 transition-colors flex items-center gap-1.5">
+                                    <CheckCircle className="w-3 h-3" /> Accept
+                                  </button>
+                                  <button onClick={() => updateBookingStatus(d.id, "cancelled")} className="px-3 py-1.5 rounded-full border border-border text-muted-fg text-xs font-medium hover:text-fg transition-colors flex items-center gap-1.5">
+                                    <XCircle className="w-3 h-3" /> Decline
+                                  </button>
+                                </>
+                              )}
+
+                              {STATUS_ACTIONS[d.status] && d.status !== "pending" && (
+                                <button onClick={() => updateBookingStatus(d.id, STATUS_ACTIONS[d.status].next)}
+                                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${STATUS_ACTIONS[d.status].color}`}>
+                                  <CheckCircle className="w-3 h-3" /> {STATUS_ACTIONS[d.status].label}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))}
+              </motion.div>
+            </AnimatePresence>
+          </>
         )}
       </main>
     </div>
