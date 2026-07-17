@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import {
   BarChart3, Users, UserCheck, Package, DollarSign, TrendingUp,
-  Truck, Activity, ArrowUpRight, Clock, MapPin, LogOut, List
+  Truck, Activity, ArrowUpRight, Clock, MapPin, LogOut, List, RefreshCw
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAdminData } from "../../hooks/useAdminData";
@@ -27,7 +27,7 @@ export function AdminDashboard() {
   const [tab, setTab] = useState<Tab>("overview");
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
-  const { stats, recentDeliveries, allBookings, topDrivers, revenue, analytics, loading } = useAdminData();
+  const { stats, recentDeliveries, allBookings, topDrivers, revenue, analytics, loading, refresh } = useAdminData();
 
   const handleSignOut = async () => {
     await signOut();
@@ -81,6 +81,9 @@ export function AdminDashboard() {
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-fg hidden sm:block">{user?.full_name || "Admin"}</span>
             <span className="w-1.5 h-1.5 rounded-full bg-success" />
+            <button onClick={refresh} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted-fg hover:text-fg hover:bg-muted transition-colors">
+              <RefreshCw className="w-4 h-4" />
+            </button>
             <button onClick={handleSignOut} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted-fg hover:text-fg hover:bg-muted transition-colors">
               <LogOut className="w-4 h-4" /> Sign Out
             </button>

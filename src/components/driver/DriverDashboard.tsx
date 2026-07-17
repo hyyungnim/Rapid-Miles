@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import {
   Navigation, Clock, Package, ChevronDown, Phone,
-  CheckCircle, XCircle, Truck, LogOut, List
+  CheckCircle, XCircle, Truck, LogOut, List, RefreshCw
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useDriverDeliveries } from "../../hooks/useDriverDeliveries";
@@ -35,7 +35,7 @@ export function DriverDashboard() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { activeDeliveries, history, allBookings, loading, updateBookingStatus } = useDriverDeliveries();
+  const { activeDeliveries, history, allBookings, loading, updateBookingStatus, refresh } = useDriverDeliveries();
 
   const handleSignOut = async () => {
     await signOut();
@@ -69,6 +69,9 @@ export function DriverDashboard() {
               <span className="w-1.5 h-1.5 rounded-full bg-success" />
               <span className="text-xs text-muted-fg hidden sm:inline">Online</span>
             </div>
+            <button onClick={refresh} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-muted-fg hover:text-fg hover:bg-muted transition-colors">
+              <RefreshCw className="w-4 h-4" />
+            </button>
             <button onClick={() => navigate("/rapidman/profile")}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-muted transition-colors">
               <span className="text-sm text-muted-fg hidden sm:block">{user?.full_name || "Rapidman"}</span>
