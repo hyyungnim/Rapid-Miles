@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { loadGoogleMaps, hasGoogleMaps } from "../../lib/google-maps";
+import { ILORIN } from "../../lib/photon";
 import { searchLandmarks, type Landmark } from "../../lib/ilorin-landmarks";
 
 interface Props {
@@ -32,6 +33,15 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
     };
     document.addEventListener("mousedown", click);
     return () => document.removeEventListener("mousedown", click);
+  }, []);
+
+  // Preload Google Maps early so it's ready when user types
+  useEffect(() => {
+    if (hasGoogleMaps()) {
+      loadGoogleMaps().then(gm => {
+        if (gm) console.log("Google Maps loaded for autocomplete");
+      });
+    }
   }, []);
 
   const search = useCallback(async (q: string) => {
@@ -68,23 +78,47 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
             locationBias: { lat: 8.4966, lng: 4.5426 } as any,
             radius: 50000,
           },
-          (results, status) => {
-            if (status === gm.places.PlacesServiceStatus.OK && results) {
-              resolve(results);
-            } else {
-              resolve([]);
+            (results, status) => {
+              if (status === gm.places.PlacesServiceStatus.OK && results) {
+                resolve(results);
+              } else {
+                console.warn("Google Places JS API status:", status, "for query:", q);
+                resolve([]);
+              }
             }
-          }
         );
       });
 
-      const googleItems: Suggestion[] = predictions.slice(0, 6).map((p) => ({
+      // If JS API returned no predictions, fall back to REST API
+      let googleItems: Suggestion[] = predictions.slice(0, 6).map((p) => ({
         id: p.place_id,
         label: p.description,
         lat: 0,
         lon: 0,
         source: "google" as const,
       }));
+
+      if (googleItems.length === 0) {
+        try {
+          const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+          const restUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(q)}&key=${apiKey}&types=address|establishment|geocode&components=country:ng&location=${ILORIN.center.lat},${ILORIN.center.lon}&radius=50000`;
+          const restRes = await fetch(restUrl);
+          const restData = await restRes.json();
+          if (restData.status === "OK" && restData.predictions) {
+            googleItems = restData.predictions.slice(0, 6).map((p: any) => ({
+              id: p.place_id,
+              label: p.description,
+              lat: 0,
+              lon: 0,
+              source: "google" as const,
+            }));
+          } else {
+            console.warn("Google Places REST status:", restData.status, restData.error_message || "");
+          }
+        } catch (restErr) {
+          console.warn("Google Places REST fallback failed:", restErr);
+        }
+      }
 
       const seen = new Set(local.map((l) => l.label.toLowerCase()));
       const merged = [...local, ...googleItems.filter((g) => !seen.has(g.label.toLowerCase()))];
