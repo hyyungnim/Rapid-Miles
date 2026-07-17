@@ -197,13 +197,9 @@ export function BookingFlow() {
     try {
       if (supabase) {
         const { error } = await supabase.from("bookings").insert(booking);
-        if (error) {
-          console.warn("Supabase insert failed, saving locally:", error.message);
-          persistToLocal();
-        }
-      } else {
-        persistToLocal();
+        if (error) console.warn("Supabase insert failed, saving locally:", error.message);
       }
+      persistToLocal();
       setBooked(true);
     } catch (e: any) {
       console.warn("Booking save error, saving locally:", e.message);
