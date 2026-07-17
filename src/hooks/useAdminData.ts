@@ -217,24 +217,42 @@ export function useAdminData() {
           return;
         } catch (e) {
           console.warn("Admin Supabase fetch failed, falling back to local data:", e);
+          // Attempt backfill from Supabase even when main query fails
+          try {
+            const { data: backup } = await supabase.from("bookings").select("*");
+            if (backup && backup.length > 0) {
+              const existing = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+              const localKeys = new Set(existing.map((b: any) => b.tracking_number));
+              const missing = backup.filter((b: any) => !localKeys.has(b.tracking_number || b.id));
+              if (missing.length > 0) {
+                localStorage.setItem("rm_bookings", JSON.stringify([...existing, ...missing]));
+              }
+            }
+          } catch (_) {}
         }
       }
 
-      // Local-only fallback
+      // Local-only fallback (re-read in case backfill added data)
+      const fbBookings: any[] = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+      const fbRevenue = fbBookings.reduce((s: number, b: any) => s + (b.delivery_fee || 0), 0);
+      const fbRecent = [...fbBookings].sort(
+        (a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      ).slice(0, 5);
+
       setStats({
-        deliveries: localBookings.length,
-        deliveriesChange: localBookings.length ? "+100%" : "0%",
+        deliveries: fbBookings.length,
+        deliveriesChange: fbBookings.length ? "+100%" : "0%",
         customers: 1, customersChange: "0",
         drivers: 0, driversChange: "0",
-        revenue: localRevenue,
-        revenueChange: localRevenue ? "+100%" : "0%",
+        revenue: fbRevenue,
+        revenueChange: fbRevenue ? "+100%" : "0%",
       });
-      setRecentDeliveries(localRecent.map((b: any) => ({
+      setRecentDeliveries(fbRecent.map((b: any) => ({
         id: b.tracking_number, tracking_number: b.tracking_number,
         customer_name: b.user_id || "You", driver_name: "Unassigned",
         status: b.status, amount: b.delivery_fee || 0,
       })));
-      setAllBookings(localBookings.map((b: any) => ({
+      setAllBookings(fbBookings.map((b: any) => ({
         tracking_number: b.tracking_number, user_id: b.user_id || "",
         driver_id: b.driver_id || null, customer_name: b.user_id || "You",
         driver_name: "Unassigned", status: b.status,

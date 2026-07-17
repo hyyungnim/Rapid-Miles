@@ -133,9 +133,24 @@ export function useDriverDeliveries() {
         setAllBookings(deduped);
       } catch (e) {
         console.warn("Driver Supabase fetch failed, using local data only:", e);
-        setActiveDeliveries(localMapped.filter(d => !["delivered", "cancelled"].includes(d.status)));
-        setHistory(localMapped.filter(d => ["delivered", "cancelled"].includes(d.status)));
-        setAllBookings(localMapped);
+        // Backfill attempt
+        try {
+          const { data: backup } = await supabase.from("bookings").select("*");
+          if (backup && backup.length > 0) {
+            const existing = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+            const localKeys = new Set(existing.map((b: any) => b.tracking_number));
+            const missing = backup.filter((b: any) => !localKeys.has(b.tracking_number || b.id));
+            if (missing.length > 0) {
+              localStorage.setItem("rm_bookings", JSON.stringify([...existing, ...missing]));
+            }
+          }
+        } catch (_) {}
+        // Re-read local after possible backfill
+        const refetched: any[] = JSON.parse(localStorage.getItem("rm_bookings") || "[]");
+        const refetchedMapped = mapBookings(refetched.filter((b: any) => b.driver_id === user?.id || b.status === "pending"));
+        setActiveDeliveries(refetchedMapped.filter(d => !["delivered", "cancelled"].includes(d.status)));
+        setHistory(refetchedMapped.filter(d => ["delivered", "cancelled"].includes(d.status)));
+        setAllBookings(refetchedMapped);
       }
 
       setLoading(false);
