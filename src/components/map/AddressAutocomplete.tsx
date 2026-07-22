@@ -204,7 +204,8 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
 
   return (
     <div ref={ref} className="relative">
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-muted focus-within:bg-card focus-within:ring-1 focus-within:ring-primary/30 transition-all">
+      <div className={"flex items-center gap-3 px-4 py-2.5 rounded-xl bg-muted " +
+        "focus-within:bg-card focus-within:ring-1 focus-within:ring-primary/30 transition-all"}>
         {icon}
         <input
           value={value}
@@ -215,7 +216,8 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
         <div className="flex items-center gap-1">
           {value && (
             <button type="button" onClick={() => { onChange(""); setOpen(false); }}
-              className="w-5 h-5 rounded-full bg-border text-muted-fg hover:text-fg hover:bg-border/80 text-xs flex items-center justify-center transition-colors"
+              className={"w-5 h-5 rounded-full bg-border text-muted-fg hover:text-fg " +
+                "hover:bg-border/80 text-xs flex items-center justify-center transition-colors"}
               aria-label="Clear">
               ×
             </button>
@@ -224,13 +226,16 @@ export function AddressAutocomplete({ value, onChange, onSelect, placeholder = "
         </div>
       </div>
       {open && items.length > 0 && (
-        <div className="absolute z-50 top-full mt-1 w-full bg-card rounded-xl border border-border shadow-lg max-h-60 overflow-y-auto">
+        <div className={"absolute z-50 top-full mt-1 w-full bg-card rounded-xl " +
+          "border border-border shadow-lg max-h-60 overflow-y-auto"}>
           {items.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => handleSelect(item)}
-              className="w-full text-left px-4 py-2.5 text-sm text-fg hover:bg-primary-light hover:text-primary border-b border-border last:border-0 transition-colors flex items-center gap-2"
+              className={"w-full text-left px-4 py-2.5 text-sm text-fg " +
+                "hover:bg-primary-light hover:text-primary border-b border-border " +
+                "last:border-0 transition-colors flex items-center gap-2"}
             >
               <span className="text-[10px] font-medium text-accent bg-accent-light px-1.5 py-0.5 rounded shrink-0">
                 {item.source === "landmark" ? "Landmark" : "Place"}

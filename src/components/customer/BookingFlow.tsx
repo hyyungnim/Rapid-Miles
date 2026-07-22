@@ -426,7 +426,7 @@ export function BookingFlow() {
               {photo ? (
                 <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-border">
                   <img src={photo} alt="Package" className="w-full h-full object-cover" />
-                  <button onClick={() => setPhoto(null)} className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-error text-white text-xs flex items-center justify-center">×</button>
+                  <button onClick={() => { setPhoto(null); setPhotoError(false); }} className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-error text-white text-xs flex items-center justify-center">×</button>
                 </div>
               ) : (
                 <button type="button" onClick={() => fileRef.current?.click()}
